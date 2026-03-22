@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "teampass"
+version = "0.1.0"
+description = ""
+authors = ["ycalk <alosev752@gmail.com>"]
+packages = [
+    {include = "teampass/entrypoint",from = "bases"},
+    {include = "teampass/migrator",from = "bases"},
+    {include = "teampass/database",from = "components"},
+    {include = "teampass/logging",from = "components"},
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-asyncio = "^1.3.0"
+ruff = "^0.15.7"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
