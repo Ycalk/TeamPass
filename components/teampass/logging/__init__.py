@@ -1,3 +1,3 @@
-from teampass.logging import core
+from .core import LoggingSettings, LoggingSettingsProvider, setup_logging
 
-__all__ = ["core"]
+__all__ = ["setup_logging", "LoggingSettings", "LoggingSettingsProvider"]
