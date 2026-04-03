@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, func
+from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import TIMESTAMP
 
 from ._base import BaseDAO, BaseDAOFactory, BaseModel
 
@@ -23,13 +21,6 @@ class Student(BaseModel):
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
     patronymic: Mapped[str | None] = mapped_column(String(255))
-
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
 
     user: Mapped[User | None] = relationship(
         back_populates="student", passive_deletes=True

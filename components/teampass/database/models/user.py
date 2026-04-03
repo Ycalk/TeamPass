@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Index, String, func
+from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import TIMESTAMP
 
 from ._base import BaseDAO, BaseDAOFactory, BaseModel
+from .student_profile import StudentProfile
 
 if TYPE_CHECKING:
     from .student import Student
@@ -38,16 +37,11 @@ class User(BaseModel):
     )
     is_captain: Mapped[bool] = mapped_column(default=False)
 
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-
     student: Mapped[Student] = relationship(back_populates="user")
-
     team: Mapped[Team | None] = relationship(back_populates="members")
+    student_profile: Mapped[StudentProfile] = relationship(
+        back_populates="user", passive_deletes=True
+    )
 
 
 class UserDAO(BaseDAO[User, UUID]):
@@ -64,6 +58,7 @@ class UserDAO(BaseDAO[User, UUID]):
             email=email,
             password_hash=password_hash,
             student_id=student_id,
+            student_profile=StudentProfile(),
         )
         await self.save(obj)
         return obj
