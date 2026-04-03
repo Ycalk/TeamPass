@@ -6,13 +6,14 @@ from uuid import UUID, uuid4
 from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
-from ._base import BaseDAO, BaseDAOFactory, BaseModel
 from .student_profile import StudentProfile
 
 if TYPE_CHECKING:
+    from teampass.team.storage import Team
+
     from .student import Student
-    from .team import Team
 
 
 class User(BaseModel):

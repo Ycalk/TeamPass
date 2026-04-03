@@ -1,28 +1,15 @@
-from .core import DatabaseProvider, register_model
-from .models import (
+from .core import (
+    BaseDAO,
+    BaseDAOFactory,
+    BaseModel,
+    DatabaseProvider,
     MultipleDAOFactory,
-    Student,
-    StudentDAO,
-    StudentDAOFactory,
-    Team,
-    TeamDAO,
-    TeamDAOFactory,
-    User,
-    UserDAO,
-    UserDAOFactory,
 )
 
 __all__ = [
+    "BaseDAO",
+    "BaseDAOFactory",
+    "BaseModel",
     "DatabaseProvider",
-    "register_model",
-    "Student",
-    "Team",
-    "User",
-    "StudentDAO",
-    "TeamDAO",
-    "UserDAO",
-    "StudentDAOFactory",
-    "TeamDAOFactory",
-    "UserDAOFactory",
     "MultipleDAOFactory",
 ]

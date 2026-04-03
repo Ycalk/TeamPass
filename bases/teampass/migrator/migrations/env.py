@@ -5,9 +5,8 @@ from alembic import context
 from dishka import make_async_container, make_container
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-from teampass.database import DatabaseProvider
+from teampass.database import BaseModel, DatabaseProvider
 from teampass.database.core import DatabaseUrl
-from teampass.database.models._base import BaseModel
 from teampass.logging import LoggingSettings, LoggingSettingsProvider, setup_logging
 
 # this is the Alembic Config object, which provides
@@ -31,6 +30,13 @@ target_metadata = BaseModel.metadata
 # ... etc.
 
 
+def register_models() -> list[type[BaseModel]]:
+    from teampass.team.storage import Team
+    from teampass.user.storage import Student, StudentProfile, User
+
+    return [Team, Student, StudentProfile, User]
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -43,6 +49,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
+    register_models()
     container = make_container(DatabaseProvider(), LoggingSettingsProvider())
     setup_logging(container.get(LoggingSettings), "migrator")
 
@@ -70,6 +77,7 @@ async def run_async_migrations() -> None:
     and associate a connection with the context.
 
     """
+    register_models()
     container = make_async_container(DatabaseProvider(), LoggingSettingsProvider())
     setup_logging(await container.get(LoggingSettings), "migrator")
     connectable = await container.get(AsyncEngine)

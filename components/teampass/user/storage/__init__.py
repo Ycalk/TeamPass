@@ -1,20 +1,14 @@
-from ._base import MultipleDAOFactory
 from .student import Student, StudentDAO, StudentDAOFactory
-from .team import (
-    Team,
-    TeamDAO,
-    TeamDAOFactory,
-)
+from .student_profile import StudentProfile, StudentProfileDAO, StudentProfileDAOFactory
 from .user import User, UserDAO, UserDAOFactory
 
 __all__ = [
-    "MultipleDAOFactory",
     "Student",
     "StudentDAO",
     "StudentDAOFactory",
-    "Team",
-    "TeamDAO",
-    "TeamDAOFactory",
+    "StudentProfile",
+    "StudentProfileDAO",
+    "StudentProfileDAOFactory",
     "User",
     "UserDAO",
     "UserDAOFactory",

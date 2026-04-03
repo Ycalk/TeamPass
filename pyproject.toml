@@ -8,6 +8,8 @@ packages = [
     {include = "teampass/migrator",from = "bases"},
     {include = "teampass/database",from = "components"},
     {include = "teampass/logging",from = "components"},
+    {include = "teampass/user",from = "components"},
+    {include = "teampass/team",from = "components"},
 ]
 
 [tool.poetry.dependencies]

@@ -6,8 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from ._base import BaseDAO, BaseDAOFactory, BaseModel
+from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 if TYPE_CHECKING:
     from .user import User
