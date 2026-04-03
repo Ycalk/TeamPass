@@ -1,6 +1,5 @@
 import logging
 import sys
-from typing import ClassVar
 
 import structlog
 from dishka import Provider, Scope, provide
@@ -9,18 +8,8 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-class LoggingSettings(BaseSettings):
-    model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
-        frozen=True,
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore",
-    )
-    trace_exporter_endpoint: str | None = None
+from .settings import LoggingSettings
 
 
 class LoggingSettingsProvider(Provider):
