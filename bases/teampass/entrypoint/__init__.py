@@ -1,3 +1,3 @@
-from teampass.entrypoint import core
+from .core import run
 
-__all__ = ["core"]
+__all__ = ["run"]
