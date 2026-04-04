@@ -1,4 +1,4 @@
-from .login import InvalidEmailOrPasswordException, LoginCommand, LoginMethod
+from .login import InvalidEmailOrPasswordException, LoginUserCommand, LoginUserMethod
 from .register import (
     EmailAlreadyRegisteredException,
     InvalidStudentDataException,
@@ -9,8 +9,8 @@ from .register import (
 )
 
 __all__ = [
-    "LoginCommand",
-    "LoginMethod",
+    "LoginUserCommand",
+    "LoginUserMethod",
     "InvalidEmailOrPasswordException",
     "RegisterUserCommand",
     "RegisterUserMethod",

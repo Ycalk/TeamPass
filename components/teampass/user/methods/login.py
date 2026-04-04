@@ -19,12 +19,12 @@ class InvalidEmailOrPasswordException(DomainUnauthorizedException):
         super().__init__(f"Invalid email or password for email {email}")
 
 
-class LoginCommand(BaseModel):
+class LoginUserCommand(BaseModel):
     email: EmailStr
     plain_password: SecretStr
 
 
-class LoginMethod(DomainMethod[LoginCommand, User]):
+class LoginUserMethod(DomainMethod[LoginUserCommand, User]):
     def __init__(
         self,
         user_dao: UserDAO,
@@ -34,7 +34,7 @@ class LoginMethod(DomainMethod[LoginCommand, User]):
         self.password_hasher: PasswordHasher = password_hasher
 
     @override
-    async def __call__(self, command: LoginCommand) -> User:
+    async def __call__(self, command: LoginUserCommand) -> User:
         with _tracer.start_as_current_span("login_user") as span:
             span.set_attribute("email", command.email)
             logger = _logger.bind(email=command.email)
@@ -50,7 +50,7 @@ class LoginMethod(DomainMethod[LoginCommand, User]):
 
             try:
                 self.password_hasher.verify(
-                    command.plain_password.get_secret_value(), user.password_hash
+                    user.password_hash, command.plain_password.get_secret_value()
                 )
             except VerifyMismatchError as e:
                 logger.error("invalid_password")

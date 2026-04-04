@@ -4,8 +4,8 @@ from .methods import (
     EmailAlreadyRegisteredException,
     InvalidEmailOrPasswordException,
     InvalidStudentDataException,
-    LoginCommand,
-    LoginMethod,
+    LoginUserCommand,
+    LoginUserMethod,
     RegisterUserCommand,
     RegisterUserMethod,
     StudentAlreadyRegisteredException,
@@ -14,8 +14,8 @@ from .methods import (
 
 __all__ = [
     "UserProvider",
-    "LoginCommand",
-    "LoginMethod",
+    "LoginUserCommand",
+    "LoginUserMethod",
     "InvalidEmailOrPasswordException",
     "RegisterUserCommand",
     "RegisterUserMethod",
