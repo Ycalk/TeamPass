@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index, String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
@@ -63,6 +63,16 @@ class UserDAO(BaseDAO[User, UUID]):
         )
         await self.save(obj)
         return obj
+
+    async def find_by_student_id(self, student_id: UUID) -> User | None:
+        stmt = select(User).where(User.student_id == student_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_by_email(self, email: str) -> User | None:
+        stmt = select(User).where(User.email == email)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class UserDAOFactory(BaseDAOFactory[UserDAO]):

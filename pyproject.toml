@@ -27,6 +27,8 @@ opentelemetry-exporter-otlp = "^1.40.0"
 opentelemetry-instrumentation-sqlalchemy = "^0.61b0"
 opentelemetry-instrumentation-fastapi = "^0.61b0"
 aio-pika = "^9.6.2"
+email-validator = "^2.3.0"
+argon2-cffi = "^25.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
