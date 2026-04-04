@@ -10,6 +10,7 @@ packages = [
     {include = "teampass/logging",from = "components"},
     {include = "teampass/user",from = "components"},
     {include = "teampass/team",from = "components"},
+    {include = "teampass/domain_core",from = "components"},
 ]
 
 [tool.poetry.dependencies]

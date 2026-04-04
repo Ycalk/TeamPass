@@ -10,7 +10,7 @@ from teampass.domain_core import (
     DomainMethod,
     DomainNotFoundException,
 )
-from teampass.user.dto.user import User
+from teampass.user.dto import User
 from teampass.user.storage import StudentDAO, UserDAO
 
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)

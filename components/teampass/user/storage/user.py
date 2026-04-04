@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Index, String, select
+from sqlalchemy import ForeignKey, Index, String, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
@@ -23,7 +23,8 @@ class User(BaseModel):
             "uq_team_captain",
             "team_id",
             unique=True,
-            postgresql_where="is_captain = true",
+            postgresql_where=text("is_captain = true"),
+            sqlite_where=text("is_captain = 1"),
         ),
     )
 

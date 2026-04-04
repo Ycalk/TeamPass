@@ -6,7 +6,7 @@ from argon2.exceptions import VerifyMismatchError
 from opentelemetry import trace
 from pydantic import BaseModel, EmailStr, SecretStr
 from teampass.domain_core import DomainMethod, DomainUnauthorizedException
-from teampass.user.dto.user import User
+from teampass.user.dto import User
 from teampass.user.storage import UserDAO
 
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
