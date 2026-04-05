@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import String
+from sqlalchemy import String, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 class Team(BaseModel):
     __tablename__: str = "team"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, server_default=func.gen_random_uuid()
+    )
     name: Mapped[str] = mapped_column(String(255))
 
     members: Mapped[list[User]] = relationship(

@@ -89,9 +89,10 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
             if student is None:
                 raise StudentNotFoundException(command.student_id)
             if (
-                student.first_name != command.first_name
-                or student.last_name != command.last_name
-                or student.patronymic != command.patronymic
+                student.first_name.lower() != command.first_name.lower()
+                or student.last_name.lower() != command.last_name.lower()
+                or (student.patronymic or "").lower()
+                != (command.patronymic or "").lower()
             ):
                 span.set_attribute("student.id", str(student.id))
                 span.set_attribute("student.first_name", student.first_name)
