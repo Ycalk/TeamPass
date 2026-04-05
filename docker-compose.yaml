@@ -1,0 +1,96 @@
+x-depends_on: &additional_services_healthy
+  postgres:
+    condition: service_healthy
+  jaeger:
+    condition: service_started
+
+services:
+  # Additional
+  postgres:
+    image: postgres:17.9-bookworm
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  opensearch:
+    image: opensearchproject/opensearch:3.4.0
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.14.1
+    restart: always
+    ports:
+      - "127.0.0.1:9333:16686"
+    volumes:
+      - "./jaeger/jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
+      - "./jaeger/config.yml:/etc/jaeger/config.yml"
+    command: ["--config", "/etc/jaeger/config.yml"]
+    environment:
+      - SPANMETRICS_FLUSH_INTERVAL=10s
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+  # Services
+  migrator:
+    build:
+      context: projects/migrator
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+
+      - TRACE_EXPORTER_ENDPOINT=http://jaeger:4318/v1/traces
+    depends_on:
+      <<: *additional_services_healthy
+
+  entrypoint:
+    build:
+      context: projects/entrypoint
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "127.0.0.1:9111:8080"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+
+      - SECRET_KEY=${SECRET_KEY}
+      - TRACE_EXPORTER_ENDPOINT=http://jaeger:4318/v1/traces
+    depends_on:
+      <<: *additional_services_healthy
+      migrator:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  opensearch-data:
