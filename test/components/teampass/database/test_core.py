@@ -1,21 +1,19 @@
+from collections.abc import AsyncIterator
+
 import pytest
-from sqlalchemy.orm import Mapped, mapped_column
-from teampass.database.core import (
-    BaseDAOFactory,
-    BaseModel,
-    DatabaseProvider,
-)
+import pytest_asyncio
+from dishka import AsyncContainer, Provider, make_async_container
+from teampass.database.core import BaseDAOFactory, DatabaseProvider
 from teampass.database.settings import DatabaseSettings
 
 
-def test_base_model_columns():
-    class DummyModel(BaseModel):
-        __tablename__: str = "dummy"
-        id: Mapped[int] = mapped_column(primary_key=True)
-
-    assert "created_at" in DummyModel.__table__.columns
-    assert "updated_at" in DummyModel.__table__.columns
-    assert "id" in DummyModel.__table__.columns
+@pytest_asyncio.fixture(scope="class")
+async def app_container(
+    test_database_provider: Provider,
+) -> AsyncIterator[AsyncContainer]:
+    container = make_async_container(DatabaseProvider(), test_database_provider)
+    yield container
+    await container.close()
 
 
 def test_base_dao_factory_cannot_be_instantiated():

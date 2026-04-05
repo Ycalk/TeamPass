@@ -54,7 +54,7 @@ class TestRegisterMethod:
         student_dao: StudentDAO,
     ) -> None:
         await student_dao.create(
-            student_id="12345_np",
+            student_id="123456",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic=None,
@@ -63,7 +63,7 @@ class TestRegisterMethod:
         command = RegisterUserCommand(
             email="ivan_np@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12345_np",
+            student_id="123456",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic=None,
@@ -96,7 +96,7 @@ class TestRegisterMethod:
         student_dao: StudentDAO,
     ) -> None:
         await student_dao.create(
-            student_id="12346",
+            student_id="12347",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -105,7 +105,7 @@ class TestRegisterMethod:
         command = RegisterUserCommand(
             email="invalid@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12346",
+            student_id="12347",
             first_name="Petr",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -114,7 +114,7 @@ class TestRegisterMethod:
         with pytest.raises(InvalidStudentDataException) as exc_info:
             await register_user_method(command)
 
-        assert exc_info.value.student_id == "12346"
+        assert exc_info.value.student_id == "12347"
 
     async def test_register_student_already_registered(
         self,
@@ -122,7 +122,7 @@ class TestRegisterMethod:
         student_dao: StudentDAO,
     ) -> None:
         await student_dao.create(
-            student_id="12347",
+            student_id="12348",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -131,7 +131,7 @@ class TestRegisterMethod:
         command = RegisterUserCommand(
             email="first@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12347",
+            student_id="12348",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -142,7 +142,7 @@ class TestRegisterMethod:
         command2 = RegisterUserCommand(
             email="second@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12347",
+            student_id="12348",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -151,7 +151,7 @@ class TestRegisterMethod:
         with pytest.raises(StudentAlreadyRegisteredException) as exc_info:
             await register_user_method(command2)
 
-        assert exc_info.value.student_id == "12347"
+        assert exc_info.value.student_id == "12348"
 
     async def test_register_email_already_registered(
         self,
@@ -159,14 +159,14 @@ class TestRegisterMethod:
         student_dao: StudentDAO,
     ) -> None:
         await student_dao.create(
-            student_id="12348",
+            student_id="12349",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
         )
 
         await student_dao.create(
-            student_id="12349",
+            student_id="123410",
             first_name="Petr",
             last_name="Petrov",
             patronymic="Petrovich",
@@ -175,7 +175,7 @@ class TestRegisterMethod:
         command1 = RegisterUserCommand(
             email="shared@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12348",
+            student_id="12349",
             first_name="Ivan",
             last_name="Ivanov",
             patronymic="Ivanovich",
@@ -185,7 +185,7 @@ class TestRegisterMethod:
         command2 = RegisterUserCommand(
             email="shared@example.com",
             plain_password=SecretStr("password123"),
-            student_id="12349",
+            student_id="123410",
             first_name="Petr",
             last_name="Petrov",
             patronymic="Petrovich",
