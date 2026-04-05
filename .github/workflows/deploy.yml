@@ -1,0 +1,124 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test_project:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_HOST: localhost
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: "2.3.1"
+
+      - name: Install Poetry plugins and dependencies
+        run: |
+          poetry self add poetry-multiproject-plugin
+          poetry self add poetry-polylith-plugin
+          poetry self add poetry-plugin-export
+          poetry install
+
+      - name: Run tests with pytest
+        run: |
+          poetry run pytest
+
+  build_wheels:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: "2.3.1"
+
+      - name: Instal Poetry plugins
+        run: |
+          poetry self add poetry-multiproject-plugin
+          poetry self add poetry-polylith-plugin
+          poetry self add poetry-plugin-export
+          poetry install
+
+      - name: Create entrypoint project wheel
+        working-directory: projects/entrypoint
+        run: |
+          poetry install
+          poetry build-project
+          poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+      - name: Create migrator project wheel
+        working-directory: projects/migrator
+        run: |
+          poetry install
+          poetry build-project
+          poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+
+      - name: Archive code for deploy
+        run: |
+          zip -r deploy.zip docker-compose.yaml projects/ jaeger/
+
+      - name: Create .env file
+        run: |
+          echo "OPENSEARCH_INITIAL_ADMIN_PASSWORD=${{ secrets.OPENSEARCH_INITIAL_ADMIN_PASSWORD }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+
+      - name: Transfer files to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          source: "deploy.zip,.env"
+          target: "/home/${{ secrets.SERVER_USER }}/TeamPass/"
+
+  deploy_container:
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: [build_wheels, test_project]
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SERVER_USER }}/TeamPass/
+            unzip -o deploy.zip
+            sudo docker compose build
+            sudo docker compose up -d --remove-orphans
+            sudo docker image prune -f
+            rm /home/${{ secrets.SERVER_USER }}/TeamPass/deploy.zip
