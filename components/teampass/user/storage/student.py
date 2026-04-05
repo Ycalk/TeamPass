@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, Computed, String, func, select
+from sqlalchemy import String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
@@ -14,9 +14,6 @@ if TYPE_CHECKING:
 
 class Student(BaseModel):
     __tablename__: str = "student"
-    __table_args__: tuple[Any, ...] = (
-        CheckConstraint("student_id ~ '^[0-9]+$'", name="chk_student_id_digits"),
-    )
 
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=func.gen_random_uuid()
@@ -25,14 +22,6 @@ class Student(BaseModel):
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
     patronymic: Mapped[str | None] = mapped_column(String(255))
-
-    full_name: Mapped[str] = mapped_column(
-        String(255),
-        Computed(
-            "last_name || ' ' || first_name || COALESCE(' ' || patronymic, '')",
-            persisted=True,
-        ),
-    )
 
     user: Mapped[User | None] = relationship(
         back_populates="student", passive_deletes=True

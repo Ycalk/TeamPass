@@ -1,3 +1,3 @@
-from teampass.team import core
+from .core import TeamProvider
 
-__all__ = ["core"]
+__all__ = ["TeamProvider"]

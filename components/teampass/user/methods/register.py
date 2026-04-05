@@ -129,4 +129,5 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
 
             span.set_attribute("user.id", str(user.id))
             logger.info("user_registered")
+            await self.user_dao.commit()
             return User.from_persistent(user)

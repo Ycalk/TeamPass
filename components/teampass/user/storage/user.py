@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, func, select, text
+from sqlalchemy import ForeignKey, Index, String, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
@@ -25,10 +25,6 @@ class User(BaseModel):
             unique=True,
             postgresql_where=text("is_captain = true"),
             sqlite_where=text("is_captain = 1"),
-        ),
-        CheckConstraint(
-            "email ~* '^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'",
-            name="chk_valid_email",
         ),
     )
 
