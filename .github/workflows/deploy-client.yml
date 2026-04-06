@@ -1,0 +1,63 @@
+name: Deploy client
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_client:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: client
+      
+      - name: Build frontend
+        run: npm run build
+        working-directory: client
+      
+      - name: Prepare deploy directory
+        run: |
+          mkdir -p frontend
+          cp -r client/dist/* frontend/
+
+      - name: Archive code for deploy
+        run: |
+          zip -r deploy-client.zip frontend/
+
+      - name: Transfer files to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          source: "deploy-client.zip"
+          target: "/home/${{ secrets.SERVER_USER }}/TeamPass/"
+
+  deploy_container:
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: [build_client]
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SERVER_USER }}/TeamPass/
+            unzip -o deploy-client.zip
+            rm /home/${{ secrets.SERVER_USER }}/TeamPass/deploy-client.zip
