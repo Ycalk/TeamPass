@@ -85,6 +85,31 @@ services:
       - POSTGRES_PORT=5432
 
       - SECRET_KEY=${SECRET_KEY}
+
+      - TRACE_EXPORTER_ENDPOINT=http://jaeger:4318/v1/traces
+    depends_on:
+      <<: *additional_services_healthy
+      migrator:
+        condition: service_started
+  
+  admin_panel:
+    build:
+      context: projects/admin_panel
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "127.0.0.1:9222:8080"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+
+      - SECRET_KEY=${ADMIN_PANEL_SECRET_KEY}
+      - SUPER_ADMIN_PASSWORD=${SUPER_ADMIN_PASSWORD}
+      - SUPER_ADMIN_USERNAME=${SUPER_ADMIN_USERNAME}
+
       - TRACE_EXPORTER_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       <<: *additional_services_healthy

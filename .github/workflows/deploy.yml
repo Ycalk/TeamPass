@@ -93,6 +93,12 @@ jobs:
           poetry build-project
           poetry export -f requirements.txt --output requirements.txt --without-hashes
 
+      - name: Create admin panel project wheel
+        working-directory: projects/admin_panel
+        run: |
+          poetry install
+          poetry build-project
+          poetry export -f requirements.txt --output requirements.txt --without-hashes
 
       - name: Archive code for deploy
         run: |
@@ -106,6 +112,10 @@ jobs:
           echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
           echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+
+          echo "ADMIN_PANEL_SECRET_KEY=${{ secrets.ADMIN_PANEL_SECRET_KEY }}" >> .env
+          echo "SUPER_ADMIN_PASSWORD=${{ secrets.SUPER_ADMIN_PASSWORD }}" >> .env
+          echo "SUPER_ADMIN_USERNAME=${{ secrets.SUPER_ADMIN_USERNAME }}" >> .env
 
       - name: Transfer files to server
         uses: appleboy/scp-action@v1
