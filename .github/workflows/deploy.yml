@@ -16,6 +16,9 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: teampass
+          SECRET_KEY: secret
+          SUPER_ADMIN_PASSWORD: password
+          SUPER_ADMIN_USERNAME: admin
         ports:
           - 5432:5432
         options: >-
