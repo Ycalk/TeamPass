@@ -9,6 +9,7 @@ from sqladmin import Admin
 from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.applications import Starlette
 from starlette.middleware.sessions import SessionMiddleware
+from teampass.admin import AdminProvider
 from teampass.database import DatabaseProvider
 from teampass.logging import LoggingSettings, LoggingSettingsProvider, setup_logging
 from teampass.team import TeamProvider
@@ -16,7 +17,7 @@ from teampass.user import UserProvider
 from uvicorn import Config, Server
 
 from .settings import AdminPanelSettings
-from .views import AdminAuth
+from .views import AdminAuth, AdminView, ChangePasswordView
 
 
 class AdminPanelProvider(Provider):
@@ -34,6 +35,7 @@ async def lifespan(app: Starlette):
 async def build_app() -> Starlette:
     container = make_async_container(
         AdminPanelProvider(),
+        AdminProvider(),
         StarletteProvider(),
         DatabaseProvider(),
         LoggingSettingsProvider(),
@@ -66,6 +68,8 @@ async def build_app() -> Starlette:
         templates_dir=str(templates_dir),
         authentication_backend=authentication_backend,
     )
+    admin.add_view(AdminView)
+    admin.add_view(ChangePasswordView)
 
     return app
 

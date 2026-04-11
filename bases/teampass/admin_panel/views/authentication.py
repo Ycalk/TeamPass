@@ -1,28 +1,26 @@
 from datetime import datetime, timedelta, timezone
-from enum import StrEnum
 from typing import Final, override
 
 import structlog
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from dishka.integrations.starlette import FromDishka
 from opentelemetry import trace
-from pydantic import BaseModel, ValidationError
+from pydantic import SecretStr, ValidationError
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
+from teampass.admin import LoginAdminCommand, LoginAdminMethod
+from teampass.admin.storage import AdminDAO
 from teampass.admin_panel.settings import AdminPanelSettings
-from teampass.admin_panel.utils import INJECT, inject_from_request
+from teampass.admin_panel.utils import (
+    INJECT,
+    AdminSession,
+    AdminType,
+    inject_from_request,
+)
 
 _logger: Final[structlog.BoundLogger] = structlog.get_logger()
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
-
-
-class AdminType(StrEnum):
-    SUPER_ADMIN = "super_admin"
-    ADMIN = "admin"
-
-
-class AdminSession(BaseModel):
-    admin_type: AdminType
-    expires_at: datetime
 
 
 class AdminAuth(AuthenticationBackend):
@@ -32,6 +30,8 @@ class AdminAuth(AuthenticationBackend):
         self,
         request: Request,
         settings: FromDishka[AdminPanelSettings] = INJECT,
+        login_admin_method: FromDishka[LoginAdminMethod] = INJECT,
+        password_hasher: FromDishka[PasswordHasher] = INJECT,
     ) -> bool:
         with _tracer.start_as_current_span("admin.login") as span:
             form = await request.form()
@@ -49,19 +49,36 @@ class AdminAuth(AuthenticationBackend):
                 username == settings.super_admin_username
                 and password == settings.super_admin_password
             ):
+                span.set_attribute("admin.type", "super_admin")
                 admin_session = AdminSession(
+                    id=None,
                     admin_type=AdminType.SUPER_ADMIN,
                     expires_at=datetime.now(timezone.utc)
                     + timedelta(days=settings.admin_session_expire_days),
+                    password_hash=password_hasher.hash(password),
                 )
                 request.session.update(admin_session.model_dump(mode="json"))
                 _logger.info("login_success", username=username)
-                span.set_attribute("success", True)
                 return True
 
-            _logger.info("invalid_credentials", username=username)
-            span.set_attribute("success", False)
-            return False
+            span.set_attribute("admin.type", "admin")
+            admin = await login_admin_method(
+                LoginAdminCommand(
+                    username=username,
+                    plain_password=SecretStr(password),
+                )
+            )
+            span.set_attribute("admin.id", str(admin.id))
+            admin_session = AdminSession(
+                id=admin.id,
+                admin_type=AdminType.ADMIN,
+                expires_at=datetime.now(timezone.utc)
+                + timedelta(days=settings.admin_session_expire_days),
+                password_hash=None,
+            )
+            request.session.update(admin_session.model_dump(mode="json"))
+            _logger.info("login_success", username=username)
+            return True
 
     @override
     async def logout(self, request: Request) -> bool:
@@ -71,7 +88,14 @@ class AdminAuth(AuthenticationBackend):
             return True
 
     @override
-    async def authenticate(self, request: Request) -> bool:
+    @inject_from_request
+    async def authenticate(
+        self,
+        request: Request,
+        admin_dao: FromDishka[AdminDAO] = INJECT,
+        password_hasher: FromDishka[PasswordHasher] = INJECT,
+        settings: FromDishka[AdminPanelSettings] = INJECT,
+    ) -> bool:
         with _tracer.start_as_current_span("admin.authenticate") as span:
             try:
                 admin_session = AdminSession.model_validate(request.session)
@@ -81,8 +105,38 @@ class AdminAuth(AuthenticationBackend):
                 span.record_exception(e)
                 return False
 
+            span.set_attribute("admin.id", str(admin_session.id or "none"))
+            span.set_attribute("admin.type", admin_session.admin_type.value)
+            span.set_attribute("admin.expires_at", admin_session.expires_at.isoformat())
+
             if admin_session.expires_at < datetime.now(timezone.utc):
                 _logger.warning("session_expired", admin_session=admin_session)
+                request.session.clear()
+                span.set_attribute("success", False)
+                return False
+
+            if admin_session.id is None:
+                if admin_session.password_hash is None:
+                    _logger.warning("no_password_hash", admin_session=admin_session)
+                    request.session.clear()
+                    span.set_attribute("success", False)
+                    return False
+
+                try:
+                    password_hasher.verify(
+                        admin_session.password_hash,
+                        settings.super_admin_password,
+                    )
+                    span.set_attribute("success", True)
+                    return True
+                except (VerifyMismatchError, InvalidHashError):
+                    _logger.error("invalid_password")
+                    request.session.clear()
+                    span.set_attribute("success", False)
+                    return False
+
+            if not await admin_dao.exists_by_id(admin_session.id):
+                _logger.warning("admin_not_found", admin_session=admin_session)
                 request.session.clear()
                 span.set_attribute("success", False)
                 return False

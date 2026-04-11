@@ -1,4 +1,5 @@
 from typing import Final, override
+from uuid import UUID
 
 import structlog
 from argon2 import PasswordHasher
@@ -18,19 +19,19 @@ _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
 
 class AdminNotFoundException(DomainNotFoundException):
-    def __init__(self, username: str) -> None:
-        self.username: str = username
-        super().__init__(f"Username {username} not found")
+    def __init__(self, admin_id: UUID) -> None:
+        self.admin_id: UUID = admin_id
+        super().__init__(f"Admin with id {admin_id} not found")
 
 
 class InvalidPasswordException(DomainUnauthorizedException):
-    def __init__(self, username: str) -> None:
-        self.username: str = username
-        super().__init__(f"Invalid password for username {username}")
+    def __init__(self, admin_id: UUID) -> None:
+        self.admin_id: UUID = admin_id
+        super().__init__(f"Invalid password for admin with id {admin_id}")
 
 
 class ChangeAdminPasswordCommand(BaseModel):
-    username: str
+    admin_id: UUID
     current_password: SecretStr
     new_password: SecretStr
 
@@ -47,13 +48,12 @@ class ChangeAdminPasswordMethod(DomainMethod[ChangeAdminPasswordCommand, Admin])
     @override
     async def __call__(self, command: ChangeAdminPasswordCommand) -> Admin:
         with _tracer.start_as_current_span("change_admin_password") as span:
-            span.set_attribute("username", command.username)
-            logger = _logger.bind(username=command.username)
+            logger = _logger.bind(admin_id=str(command.admin_id))
             logger.info("change_admin_password")
 
-            admin = await self.admin_dao.find_by_username(command.username)
+            admin = await self.admin_dao.find_by_id(command.admin_id)
             if admin is None:
-                raise AdminNotFoundException(command.username)
+                raise AdminNotFoundException(command.admin_id)
 
             span.set_attribute("admin.id", str(admin.id))
             logger.info("admin_found")
@@ -64,7 +64,7 @@ class ChangeAdminPasswordMethod(DomainMethod[ChangeAdminPasswordCommand, Admin])
                 )
             except VerifyMismatchError as e:
                 logger.error("invalid_password")
-                raise InvalidPasswordException(command.username) from e
+                raise InvalidPasswordException(command.admin_id) from e
             logger.info("password_verified")
 
             admin.password_hash = self.password_hasher.hash(
