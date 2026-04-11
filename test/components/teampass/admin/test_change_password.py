@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from argon2 import PasswordHasher
 from pydantic import SecretStr
@@ -18,13 +20,13 @@ class TestChangeAdminPasswordMethod:
         admin_dao: AdminDAO,
         password_hasher: PasswordHasher,
     ) -> None:
-        await admin_dao.create(
+        admin = await admin_dao.create(
             username="changepassadmin",
             password_hash=password_hasher.hash("oldpassword"),
         )
 
         command = ChangeAdminPasswordCommand(
-            username="changepassadmin",
+            admin_id=admin.id,
             current_password=SecretStr("oldpassword"),
             new_password=SecretStr("newpassword123"),
         )
@@ -43,7 +45,7 @@ class TestChangeAdminPasswordMethod:
         change_admin_password_method: ChangeAdminPasswordMethod,
     ) -> None:
         command = ChangeAdminPasswordCommand(
-            username="notfoundadmin",
+            admin_id=uuid4(),
             current_password=SecretStr("oldpassword"),
             new_password=SecretStr("newpassword123"),
         )
@@ -51,7 +53,7 @@ class TestChangeAdminPasswordMethod:
         with pytest.raises(AdminNotFoundException) as exc_info:
             await change_admin_password_method(command)
 
-        assert exc_info.value.username == "notfoundadmin"
+        assert exc_info.value.admin_id == command.admin_id
 
     async def test_change_password_invalid_current_password(
         self,
@@ -59,13 +61,13 @@ class TestChangeAdminPasswordMethod:
         admin_dao: AdminDAO,
         password_hasher: PasswordHasher,
     ) -> None:
-        await admin_dao.create(
+        admin = await admin_dao.create(
             username="invalidcurpassadmin",
             password_hash=password_hasher.hash("oldpassword"),
         )
 
         command = ChangeAdminPasswordCommand(
-            username="invalidcurpassadmin",
+            admin_id=admin.id,
             current_password=SecretStr("wrongoldpassword"),
             new_password=SecretStr("newpassword123"),
         )
@@ -73,4 +75,4 @@ class TestChangeAdminPasswordMethod:
         with pytest.raises(InvalidPasswordException) as exc_info:
             await change_admin_password_method(command)
 
-        assert exc_info.value.username == "invalidcurpassadmin"
+        assert exc_info.value.admin_id == admin.id
