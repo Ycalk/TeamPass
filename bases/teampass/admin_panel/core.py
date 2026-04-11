@@ -46,7 +46,7 @@ async def build_app() -> Starlette:
     admin_panel_settings = await container.get(AdminPanelSettings)
     logging_settings = await container.get(LoggingSettings)
 
-    setup_logging(logging_settings, "api")
+    setup_logging(logging_settings, "admin_panel")
 
     app = Starlette(
         lifespan=lifespan,
