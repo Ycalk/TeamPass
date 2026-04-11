@@ -85,6 +85,8 @@ async def run_app() -> None:
         host="0.0.0.0",
         port=admin_panel_settings.app_port,
         reload=False,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
     )
     server = Server(config)
     await server.serve()
