@@ -31,10 +31,11 @@ target_metadata = BaseModel.metadata
 
 
 def register_models() -> list[type[BaseModel]]:
+    from teampass.admin.storage import Admin
     from teampass.team.storage import Team
     from teampass.user.storage import Student, StudentProfile, User
 
-    return [Team, Student, StudentProfile, User]
+    return [Admin, Team, Student, StudentProfile, User]
 
 
 def run_migrations_offline() -> None:
