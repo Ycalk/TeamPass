@@ -16,9 +16,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: teampass
-          SECRET_KEY: secret
-          SUPER_ADMIN_PASSWORD: password
-          SUPER_ADMIN_USERNAME: admin
         ports:
           - 5432:5432
         options: >-
@@ -32,7 +29,9 @@ jobs:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: teampass
       POSTGRES_HOST: localhost
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      SECRET_KEY: secret
+      SUPER_ADMIN_PASSWORD: password
+      SUPER_ADMIN_USERNAME: admin
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
