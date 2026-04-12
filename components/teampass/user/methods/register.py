@@ -56,7 +56,7 @@ class EmailAlreadyRegisteredException(DomainConflictException):
 class RegisterUserCommand(BaseModel):
     email: EmailStr
     plain_password: Annotated[SecretStr, StringConstraints(min_length=8)]
-    student_id: str
+    student_id: Annotated[str, StringConstraints(pattern=r"^\d+$")]
     first_name: str
     last_name: str
     patronymic: str | None
