@@ -1,5 +1,9 @@
+from typing import Final
+
+import structlog
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response, status
+from opentelemetry import trace
 from teampass.entrypoint.exceptions import CustomHTTPException
 from teampass.entrypoint.scheme import (
     AccessTokenResponse,
@@ -21,6 +25,10 @@ from teampass.user import (
     RegisterUserCommand,
     RegisterUserMethod,
 )
+
+_tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
+_logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
+
 
 router = APIRouter(
     prefix="/auth",
@@ -53,11 +61,24 @@ async def register_user(
     settings: FromDishka[EntrypointSettings],
     response: Response,
 ) -> UserWithAccessToken:
-    user = await register_user_method(command)
-    access_token = create_token(user.id, TokenType.ACCESS, settings)
-    refresh_token = create_token(user.id, TokenType.REFRESH, settings)
-    set_refresh_token_cookie(response, refresh_token, settings)
-    return UserWithAccessToken(access_token=access_token, user=user)
+    with _tracer.start_as_current_span("register_user_endpoint") as span:
+        span.set_attribute("email", command.email)
+        span.set_attribute("student_id", command.student_id)
+        logger = _logger.bind(email=command.email, student_id=command.student_id)
+
+        logger.info("processing_register_user_request")
+
+        user = await register_user_method(command)
+
+        span.set_attribute("user.id", str(user.id))
+        logger.info("generating_tokens")
+
+        access_token = create_token(user.id, TokenType.ACCESS, settings)
+        refresh_token = create_token(user.id, TokenType.REFRESH, settings)
+        set_refresh_token_cookie(response, refresh_token, settings)
+
+        logger.info("register_user_request_processed")
+        return UserWithAccessToken(access_token=access_token, user=user)
 
 
 @router.post(
@@ -76,11 +97,23 @@ async def login_user(
     settings: FromDishka[EntrypointSettings],
     response: Response,
 ) -> UserWithAccessToken:
-    user = await login_user_method(command)
-    access_token = create_token(user.id, TokenType.ACCESS, settings)
-    refresh_token = create_token(user.id, TokenType.REFRESH, settings)
-    set_refresh_token_cookie(response, refresh_token, settings)
-    return UserWithAccessToken(access_token=access_token, user=user)
+    with _tracer.start_as_current_span("login_user_endpoint") as span:
+        span.set_attribute("email", command.email)
+        logger = _logger.bind(email=command.email)
+
+        logger.info("processing_login_user_request")
+
+        user = await login_user_method(command)
+
+        span.set_attribute("user.id", str(user.id))
+        logger.info("generating_tokens")
+
+        access_token = create_token(user.id, TokenType.ACCESS, settings)
+        refresh_token = create_token(user.id, TokenType.REFRESH, settings)
+        set_refresh_token_cookie(response, refresh_token, settings)
+
+        logger.info("login_user_request_processed")
+        return UserWithAccessToken(access_token=access_token, user=user)
 
 
 @router.post(
@@ -97,22 +130,36 @@ async def refresh_token(
     request: Request,
     settings: FromDishka[EntrypointSettings],
 ) -> AccessTokenResponse:
-    refresh_token = request.cookies.get(settings.refresh_token_cookie_name)
-    if refresh_token is None:
-        raise CustomHTTPException(
-            error="NoRefreshToken",
-            message="Refresh token not found in cookies",
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
+    with _tracer.start_as_current_span("refresh_token_endpoint") as span:
+        logger = _logger.bind()
+        logger.info("processing_refresh_token_request")
 
-    user_id = verify_token(refresh_token, TokenType.REFRESH, settings)
-    access_token = create_token(user_id, TokenType.ACCESS, settings)
-    return AccessTokenResponse(access_token=access_token)
+        refresh_token = request.cookies.get(settings.refresh_token_cookie_name)
+        if refresh_token is None:
+            logger.error("refresh_token_not_found_in_cookies")
+            raise CustomHTTPException(
+                error="NoRefreshToken",
+                message="Refresh token not found in cookies",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user_id = verify_token(refresh_token, TokenType.REFRESH, settings)
+        span.set_attribute("user.id", str(user_id))
+        logger = logger.bind(user_id=str(user_id))
+
+        logger.info("generating_new_access_token")
+        access_token = create_token(user_id, TokenType.ACCESS, settings)
+
+        logger.info("refresh_token_request_processed")
+        return AccessTokenResponse(access_token=access_token)
 
 
 @router.post("/logout")
 async def logout(
     response: Response, settings: FromDishka[EntrypointSettings]
 ) -> MessageResponse:
-    clear_refresh_token_cookie(response, settings)
-    return MessageResponse(message="Logged out successfully")
+    with _tracer.start_as_current_span("logout_endpoint"):
+        _logger.info("processing_logout_request")
+        clear_refresh_token_cookie(response, settings)
+        _logger.info("logout_request_processed")
+        return MessageResponse(message="Logged out successfully")
