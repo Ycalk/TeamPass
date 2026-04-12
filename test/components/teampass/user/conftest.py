@@ -4,7 +4,14 @@ import pytest_asyncio
 from argon2 import PasswordHasher
 from dishka import AsyncContainer, Provider, make_async_container
 from teampass.database import DatabaseProvider
-from teampass.user import LoginUserMethod, RegisterUserMethod, UserProvider
+from teampass.user import (
+    ChangeUserEmailMethod,
+    ChangeUserPasswordMethod,
+    LoginUserMethod,
+    RegisterUserMethod,
+    UpdateStudentProfileMethod,
+    UserProvider,
+)
 from teampass.user.storage import StudentDAO, StudentProfileDAO, UserDAO
 
 
@@ -47,3 +54,24 @@ async def register_user_method(request_container: AsyncContainer) -> RegisterUse
 @pytest_asyncio.fixture
 async def login_user_method(request_container: AsyncContainer) -> LoginUserMethod:
     return await request_container.get(LoginUserMethod)
+
+
+@pytest_asyncio.fixture
+async def change_user_email_method(
+    request_container: AsyncContainer,
+) -> ChangeUserEmailMethod:
+    return await request_container.get(ChangeUserEmailMethod)
+
+
+@pytest_asyncio.fixture
+async def change_user_password_method(
+    request_container: AsyncContainer,
+) -> ChangeUserPasswordMethod:
+    return await request_container.get(ChangeUserPasswordMethod)
+
+
+@pytest_asyncio.fixture
+async def update_student_profile_method(
+    request_container: AsyncContainer,
+) -> UpdateStudentProfileMethod:
+    return await request_container.get(UpdateStudentProfileMethod)
