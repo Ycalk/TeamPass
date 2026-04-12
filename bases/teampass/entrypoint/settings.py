@@ -1,6 +1,5 @@
 from typing import ClassVar
 
-from dishka import Provider, Scope, provide
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,9 +26,3 @@ class EntrypointSettings(BaseSettings):
         return f"{self.api_prefix}/v1"
 
     secret_key: str
-
-
-class EntrypointSettingsProvider(Provider):
-    @provide(scope=Scope.APP)
-    def settings(self) -> EntrypointSettings:
-        return EntrypointSettings()  # type: ignore # pyright: ignore

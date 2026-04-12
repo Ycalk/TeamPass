@@ -1,3 +1,3 @@
-from .authentication import router as authentication_router
+from .auth import router as auth_router
 
-__all__ = ["authentication_router"]
+__all__ = ["auth_router"]

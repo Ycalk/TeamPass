@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from dishka import make_async_container
+from dishka import Provider, Scope, make_async_container, provide
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, status
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -12,15 +12,21 @@ from teampass.team import TeamProvider
 from teampass.user import UserProvider
 from uvicorn import Config, Server
 
-from .routers import authentication_router
-from .settings import EntrypointSettings, EntrypointSettingsProvider
-from .utils import (
+from .exceptions import (
     CustomHTTPException,
-    ErrorResponse,
     all_exception_handler,
     custom_http_exception_handler,
     domain_exception_handler,
 )
+from .routers import auth_router
+from .scheme import ErrorResponse
+from .settings import EntrypointSettings
+
+
+class EntrypointSettingsProvider(Provider):
+    @provide(scope=Scope.APP)
+    def settings(self) -> EntrypointSettings:
+        return EntrypointSettings()  # type: ignore # pyright: ignore
 
 
 @asynccontextmanager
@@ -67,7 +73,7 @@ async def build_app() -> FastAPI:
     app.add_exception_handler(DomainException, domain_exception_handler)
     app.add_exception_handler(Exception, all_exception_handler)
 
-    app.include_router(authentication_router, prefix=entrypoint_settings.api_prefix)
+    app.include_router(auth_router, prefix=entrypoint_settings.methods_prefix)
 
     return app
 

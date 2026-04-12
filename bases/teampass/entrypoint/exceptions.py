@@ -1,14 +1,9 @@
-from datetime import datetime, timedelta
-from enum import StrEnum
 from typing import Self
-from uuid import UUID
 
-import jwt
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
-from pydantic import BaseModel, Field
 from teampass.domain_core import (
     DomainConflictException,
     DomainException,
@@ -16,16 +11,8 @@ from teampass.domain_core import (
     DomainNotFoundException,
     DomainUnauthorizedException,
 )
-from teampass.entrypoint.settings import EntrypointSettings
 
-
-class MessageResponse(BaseModel):
-    message: str
-
-
-class ErrorResponse(BaseModel):
-    error: str = Field(description="Тип ошибки")
-    message: str = Field(description="Детали ошибки")
+from .scheme import ErrorResponse
 
 
 class CustomHTTPException(Exception):
@@ -59,79 +46,7 @@ class CustomHTTPException(Exception):
         )
 
 
-class TokenType(StrEnum):
-    ACCESS = "access"
-    REFRESH = "refresh"
-
-
-class _TokenPayload(BaseModel):
-    sub: UUID
-    exp: int
-    iat: int
-    type: TokenType
-
-
-def create_token(
-    user_id: UUID, token_type: TokenType, settings: EntrypointSettings
-) -> str:
-    now = datetime.now()
-    if token_type == TokenType.ACCESS:
-        expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
-    elif token_type == TokenType.REFRESH:
-        expires_delta = timedelta(days=settings.refresh_token_expire_days)
-
-    payload = _TokenPayload(
-        sub=user_id,
-        exp=int((now + expires_delta).timestamp()),
-        iat=int(now.timestamp()),
-        type=token_type,
-    )
-
-    return jwt.encode(
-        payload.model_dump(mode="json"),
-        settings.secret_key,
-        algorithm=settings.jwt_encoding_algorithm,
-    )
-
-
-def verify_token(
-    token: str, token_type: TokenType, settings: EntrypointSettings
-) -> UUID:
-    try:
-        payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.jwt_encoding_algorithm]
-        )
-
-        token_data = _TokenPayload(**payload)
-
-        if token_data.type != token_type:
-            raise CustomHTTPException(
-                error="InvalidTokenError",
-                message=f"Invalid token type: expected {token_type}, "
-                + f"got {token_data.type}",
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        if token_data.exp < int(datetime.now().timestamp()):
-            raise CustomHTTPException(
-                error="TokenExpiredError",
-                message="Token expired",
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        return token_data.sub
-
-    except jwt.InvalidTokenError as e:
-        raise CustomHTTPException(
-            error="InvalidTokenError",
-            message=f"Invalid token: {str(e)}",
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        ) from e
-
-
-async def custom_http_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+def custom_http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, CustomHTTPException):
         error_response = ErrorResponse(
             error="UnexpectedMappingError",
@@ -160,7 +75,7 @@ async def custom_http_exception_handler(
     )
 
 
-async def all_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+def all_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     error_response = ErrorResponse(error=exc.__class__.__name__, message=str(exc))
     span = trace.get_current_span()
     span.record_exception(exc)
@@ -177,7 +92,7 @@ async def all_exception_handler(request: Request, exc: Exception) -> JSONRespons
     )
 
 
-async def domain_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+def domain_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, DomainException):
         error_response = ErrorResponse(
             error="UnexpectedMappingError",

@@ -1,57 +1,32 @@
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response, status
-from pydantic import BaseModel
-from teampass.entrypoint.settings import EntrypointSettings
-from teampass.entrypoint.utils import (
-    CustomHTTPException,
+from teampass.entrypoint.exceptions import CustomHTTPException
+from teampass.entrypoint.scheme import (
+    AccessTokenResponse,
     ErrorResponse,
     MessageResponse,
+    UserWithAccessToken,
+)
+from teampass.entrypoint.security import (
     TokenType,
+    clear_refresh_token_cookie,
     create_token,
+    set_refresh_token_cookie,
     verify_token,
 )
+from teampass.entrypoint.settings import EntrypointSettings
 from teampass.user import (
     LoginUserCommand,
     LoginUserMethod,
     RegisterUserCommand,
     RegisterUserMethod,
-    User,
 )
 
 router = APIRouter(
     prefix="/auth",
-    tags=["authentication"],
+    tags=["auth"],
     route_class=DishkaRoute,
 )
-
-
-def set_refresh_token_cookie(
-    response: Response, refresh_token: str, settings: EntrypointSettings
-) -> None:
-    response.set_cookie(
-        key=settings.refresh_token_cookie_name,
-        value=refresh_token,
-        max_age=settings.refresh_token_expire_days * 86400,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        path="/",
-    )
-
-
-def clear_refresh_token_cookie(
-    response: Response, settings: EntrypointSettings
-) -> None:
-    response.delete_cookie(key=settings.refresh_token_cookie_name, path="/")
-
-
-class UserWithAccessToken(BaseModel):
-    access_token: str
-    user: User
-
-
-class AccessTokenResponse(BaseModel):
-    access_token: str
 
 
 @router.post(
