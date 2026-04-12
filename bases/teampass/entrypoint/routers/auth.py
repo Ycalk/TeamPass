@@ -26,7 +26,6 @@ from teampass.user import (
     RegisterUserMethod,
 )
 
-_tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
 
@@ -61,24 +60,24 @@ async def register_user(
     settings: FromDishka[EntrypointSettings],
     response: Response,
 ) -> UserWithAccessToken:
-    with _tracer.start_as_current_span("register_user_endpoint") as span:
-        span.set_attribute("email", command.email)
-        span.set_attribute("student_id", command.student_id)
-        logger = _logger.bind(email=command.email, student_id=command.student_id)
+    span = trace.get_current_span()
+    span.set_attribute("user.email", command.email)
+    span.set_attribute("user.student_id", command.student_id)
+    logger = _logger.bind(email=command.email, student_id=command.student_id)
 
-        logger.info("processing_register_user_request")
+    logger.info("processing_register_user_request")
 
-        user = await register_user_method(command)
+    user = await register_user_method(command)
 
-        span.set_attribute("user.id", str(user.id))
-        logger.info("generating_tokens")
+    span.set_attribute("user.id", str(user.id))
+    logger.info("generating_tokens")
 
-        access_token = create_token(user.id, TokenType.ACCESS, settings)
-        refresh_token = create_token(user.id, TokenType.REFRESH, settings)
-        set_refresh_token_cookie(response, refresh_token, settings)
+    access_token = create_token(user.id, TokenType.ACCESS, settings)
+    refresh_token = create_token(user.id, TokenType.REFRESH, settings)
+    set_refresh_token_cookie(response, refresh_token, settings)
 
-        logger.info("register_user_request_processed")
-        return UserWithAccessToken(access_token=access_token, user=user)
+    logger.info("register_user_request_processed")
+    return UserWithAccessToken(access_token=access_token, user=user)
 
 
 @router.post(
@@ -97,23 +96,23 @@ async def login_user(
     settings: FromDishka[EntrypointSettings],
     response: Response,
 ) -> UserWithAccessToken:
-    with _tracer.start_as_current_span("login_user_endpoint") as span:
-        span.set_attribute("email", command.email)
-        logger = _logger.bind(email=command.email)
+    span = trace.get_current_span()
+    span.set_attribute("user.email", command.email)
+    logger = _logger.bind(email=command.email)
 
-        logger.info("processing_login_user_request")
+    logger.info("processing_login_user_request")
 
-        user = await login_user_method(command)
+    user = await login_user_method(command)
 
-        span.set_attribute("user.id", str(user.id))
-        logger.info("generating_tokens")
+    span.set_attribute("user.id", str(user.id))
+    logger.info("generating_tokens")
 
-        access_token = create_token(user.id, TokenType.ACCESS, settings)
-        refresh_token = create_token(user.id, TokenType.REFRESH, settings)
-        set_refresh_token_cookie(response, refresh_token, settings)
+    access_token = create_token(user.id, TokenType.ACCESS, settings)
+    refresh_token = create_token(user.id, TokenType.REFRESH, settings)
+    set_refresh_token_cookie(response, refresh_token, settings)
 
-        logger.info("login_user_request_processed")
-        return UserWithAccessToken(access_token=access_token, user=user)
+    logger.info("login_user_request_processed")
+    return UserWithAccessToken(access_token=access_token, user=user)
 
 
 @router.post(
@@ -130,36 +129,35 @@ async def refresh_token(
     request: Request,
     settings: FromDishka[EntrypointSettings],
 ) -> AccessTokenResponse:
-    with _tracer.start_as_current_span("refresh_token_endpoint") as span:
-        logger = _logger.bind()
-        logger.info("processing_refresh_token_request")
+    span = trace.get_current_span()
+    logger = _logger.bind()
+    logger.info("processing_refresh_token_request")
 
-        refresh_token = request.cookies.get(settings.refresh_token_cookie_name)
-        if refresh_token is None:
-            logger.error("refresh_token_not_found_in_cookies")
-            raise CustomHTTPException(
-                error="NoRefreshToken",
-                message="Refresh token not found in cookies",
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            )
+    refresh_token = request.cookies.get(settings.refresh_token_cookie_name)
+    if refresh_token is None:
+        logger.error("refresh_token_not_found_in_cookies")
+        raise CustomHTTPException(
+            error="NoRefreshToken",
+            message="Refresh token not found in cookies",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
 
-        user_id = verify_token(refresh_token, TokenType.REFRESH, settings)
-        span.set_attribute("user.id", str(user_id))
-        logger = logger.bind(user_id=str(user_id))
+    user_id = verify_token(refresh_token, TokenType.REFRESH, settings)
+    span.set_attribute("user.id", str(user_id))
+    logger = logger.bind(user_id=str(user_id))
 
-        logger.info("generating_new_access_token")
-        access_token = create_token(user_id, TokenType.ACCESS, settings)
+    logger.info("generating_new_access_token")
+    access_token = create_token(user_id, TokenType.ACCESS, settings)
 
-        logger.info("refresh_token_request_processed")
-        return AccessTokenResponse(access_token=access_token)
+    logger.info("refresh_token_request_processed")
+    return AccessTokenResponse(access_token=access_token)
 
 
 @router.post("/logout")
 async def logout(
     response: Response, settings: FromDishka[EntrypointSettings]
 ) -> MessageResponse:
-    with _tracer.start_as_current_span("logout_endpoint"):
-        _logger.info("processing_logout_request")
-        clear_refresh_token_cookie(response, settings)
-        _logger.info("logout_request_processed")
-        return MessageResponse(message="Logged out successfully")
+    _logger.info("processing_logout_request")
+    clear_refresh_token_cookie(response, settings)
+    _logger.info("logout_request_processed")
+    return MessageResponse(message="Logged out successfully")

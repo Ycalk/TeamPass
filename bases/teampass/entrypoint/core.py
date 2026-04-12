@@ -18,7 +18,7 @@ from .exceptions import (
     custom_http_exception_handler,
     domain_exception_handler,
 )
-from .routers import auth_router
+from .routers import auth_router, user_router
 from .scheme import ErrorResponse
 from .settings import EntrypointSettings
 
@@ -74,6 +74,7 @@ async def build_app() -> FastAPI:
     app.add_exception_handler(Exception, all_exception_handler)
 
     app.include_router(auth_router, prefix=entrypoint_settings.methods_prefix)
+    app.include_router(user_router, prefix=entrypoint_settings.methods_prefix)
 
     return app
 
