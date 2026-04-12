@@ -5,18 +5,14 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from opentelemetry import trace
 from pydantic import BaseModel, EmailStr, SecretStr
-from teampass.domain_core import DomainMethod, DomainUnauthorizedException
+from teampass.domain_core import DomainMethod
 from teampass.user.dto import User
 from teampass.user.storage import UserDAO
 
+from .exceptions import InvalidEmailOrPasswordException
+
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
-
-
-class InvalidEmailOrPasswordException(DomainUnauthorizedException):
-    def __init__(self, email: str) -> None:
-        self.email: str = email
-        super().__init__(f"Invalid email or password for email {email}")
 
 
 class LoginUserCommand(BaseModel):
@@ -35,8 +31,8 @@ class LoginUserMethod(DomainMethod[LoginUserCommand, User]):
 
     @override
     async def __call__(self, command: LoginUserCommand) -> User:
-        with _tracer.start_as_current_span("login_user") as span:
-            span.set_attribute("email", command.email)
+        with _tracer.start_as_current_span("user.login") as span:
+            span.set_attribute("user.email", command.email)
             logger = _logger.bind(email=command.email)
 
             logger.info("login_user")

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, String, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 from .student_profile import StudentProfile
@@ -74,6 +74,24 @@ class UserDAO(BaseDAO[User, UUID]):
 
     async def find_by_email(self, email: str) -> User | None:
         stmt = select(User).where(User.email == email)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_by_id_with_loaded_student(self, user_id: UUID) -> User | None:
+        stmt = (
+            select(User).where(User.id == user_id).options(selectinload(User.student))
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_by_id_with_loaded_student_profile(
+        self, user_id: UUID
+    ) -> User | None:
+        stmt = (
+            select(User)
+            .where(User.id == user_id)
+            .options(selectinload(User.student_profile), selectinload(User.student))
+        )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 

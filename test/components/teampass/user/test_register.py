@@ -1,8 +1,8 @@
 import pytest
 from argon2 import PasswordHasher
 from pydantic import SecretStr
-from teampass.user.methods.register import (
-    EmailAlreadyRegisteredException,
+from teampass.user import (
+    EmailAlreadyExistsException,
     InvalidStudentDataException,
     RegisterUserCommand,
     RegisterUserMethod,
@@ -191,7 +191,7 @@ class TestRegisterMethod:
             patronymic="Petrovich",
         )
 
-        with pytest.raises(EmailAlreadyRegisteredException) as exc_info:
+        with pytest.raises(EmailAlreadyExistsException) as exc_info:
             await register_user_method(command2)
 
         assert exc_info.value.email == "shared@example.com"

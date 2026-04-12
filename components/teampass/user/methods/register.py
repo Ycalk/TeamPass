@@ -4,53 +4,19 @@ import structlog
 from argon2 import PasswordHasher
 from opentelemetry import trace
 from pydantic import BaseModel, EmailStr, SecretStr, StringConstraints
-from teampass.domain_core import (
-    DomainConflictException,
-    DomainForbiddenException,
-    DomainMethod,
-    DomainNotFoundException,
-)
+from teampass.domain_core import DomainMethod
 from teampass.user.dto import User
 from teampass.user.storage import StudentDAO, UserDAO
 
+from .exceptions import (
+    EmailAlreadyExistsException,
+    InvalidStudentDataException,
+    StudentAlreadyRegisteredException,
+    StudentNotFoundException,
+)
+
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
-
-
-class StudentNotFoundException(DomainNotFoundException):
-    def __init__(self, student_id: str) -> None:
-        self.student_id: str = student_id
-        super().__init__(f"Student with ID {student_id} not found")
-
-
-class InvalidStudentDataException(DomainForbiddenException):
-    def __init__(
-        self,
-        student_id: str,
-        first_name: str,
-        last_name: str,
-        patronymic: str | None,
-    ) -> None:
-        self.student_id: str = student_id
-        self.first_name: str = first_name
-        self.last_name: str = last_name
-        self.patronymic: str | None = patronymic
-        super().__init__(
-            f"Invalid student data for student with ID {student_id}: "
-            + f"{first_name} {last_name} {patronymic or ''}"
-        )
-
-
-class StudentAlreadyRegisteredException(DomainConflictException):
-    def __init__(self, student_id: str) -> None:
-        self.student_id: str = student_id
-        super().__init__(f"Student with ID {student_id} already registered")
-
-
-class EmailAlreadyRegisteredException(DomainConflictException):
-    def __init__(self, email: str) -> None:
-        self.email: str = email
-        super().__init__(f"Email {email} already registered")
 
 
 class RegisterUserCommand(BaseModel):
@@ -75,12 +41,12 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
 
     @override
     async def __call__(self, command: RegisterUserCommand) -> User:
-        with _tracer.start_as_current_span("register_user") as span:
-            span.set_attribute("email", command.email)
-            span.set_attribute("student_id", command.student_id)
-            span.set_attribute("first_name", command.first_name)
-            span.set_attribute("last_name", command.last_name)
-            span.set_attribute("patronymic", command.patronymic or "none")
+        with _tracer.start_as_current_span("user.register") as span:
+            span.set_attribute("user.email", command.email)
+            span.set_attribute("user.student_id", command.student_id)
+            span.set_attribute("user.first_name", command.first_name)
+            span.set_attribute("user.last_name", command.last_name)
+            span.set_attribute("user.patronymic", command.patronymic or "none")
             logger = _logger.bind(email=command.email, student_id=command.student_id)
 
             logger.info("registering_user")
@@ -94,10 +60,12 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
                 or (student.patronymic or "").lower()
                 != (command.patronymic or "").lower()
             ):
-                span.set_attribute("student.id", str(student.id))
-                span.set_attribute("student.first_name", student.first_name)
-                span.set_attribute("student.last_name", student.last_name)
-                span.set_attribute("student.patronymic", student.patronymic or "none")
+                span.set_attribute("user.student.id", str(student.id))
+                span.set_attribute("user.student.first_name", student.first_name)
+                span.set_attribute("user.student.last_name", student.last_name)
+                span.set_attribute(
+                    "user.student.patronymic", student.patronymic or "none"
+                )
                 logger.error("invalid_student_data")
                 raise InvalidStudentDataException(
                     command.student_id,
@@ -116,7 +84,7 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
             if user is not None:
                 span.set_attribute("user.id", str(user.id))
                 logger.error("email_already_registered")
-                raise EmailAlreadyRegisteredException(command.email)
+                raise EmailAlreadyExistsException(command.email)
 
             password_hash = self.password_hasher.hash(
                 command.plain_password.get_secret_value()

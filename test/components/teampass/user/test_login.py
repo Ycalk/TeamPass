@@ -1,7 +1,7 @@
 import pytest
 from argon2 import PasswordHasher
 from pydantic import SecretStr
-from teampass.user.methods.login import (
+from teampass.user import (
     InvalidEmailOrPasswordException,
     LoginUserCommand,
     LoginUserMethod,

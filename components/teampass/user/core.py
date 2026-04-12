@@ -2,7 +2,13 @@ from argon2 import PasswordHasher
 from dishka import Provider, Scope, provide, provide_all
 from dishka.dependency_source import CompositeDependencySource
 
-from .methods import LoginUserMethod, RegisterUserMethod
+from .methods import (
+    ChangeUserEmailMethod,
+    ChangeUserPasswordMethod,
+    LoginUserMethod,
+    RegisterUserMethod,
+    UpdateStudentProfileMethod,
+)
 from .storage import StudentDAO, StudentProfileDAO, UserDAO
 
 
@@ -14,6 +20,9 @@ class UserProvider(Provider):
     methods: CompositeDependencySource = provide_all(
         LoginUserMethod,
         RegisterUserMethod,
+        ChangeUserEmailMethod,
+        ChangeUserPasswordMethod,
+        UpdateStudentProfileMethod,
         scope=Scope.REQUEST,
     )
 

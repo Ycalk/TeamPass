@@ -1,21 +1,49 @@
-from .login import InvalidEmailOrPasswordException, LoginUserCommand, LoginUserMethod
-from .register import (
-    EmailAlreadyRegisteredException,
+from .change_email import (
+    ChangeUserEmailCommand,
+    ChangeUserEmailMethod,
+    ChangeUserEmailPayload,
+)
+from .change_password import (
+    ChangeUserPasswordCommand,
+    ChangeUserPasswordMethod,
+    ChangeUserPasswordPayload,
+)
+from .exceptions import (
+    EmailAlreadyExistsException,
+    InvalidEmailOrPasswordException,
+    InvalidPasswordException,
     InvalidStudentDataException,
-    RegisterUserCommand,
-    RegisterUserMethod,
     StudentAlreadyRegisteredException,
     StudentNotFoundException,
+    UserNotFoundException,
+)
+from .login import LoginUserCommand, LoginUserMethod
+from .register import RegisterUserCommand, RegisterUserMethod
+from .update_student_profile import (
+    UpdateStudentProfileCommand,
+    UpdateStudentProfileMethod,
+    UpdateStudentProfilePayload,
 )
 
 __all__ = [
-    "LoginUserCommand",
-    "LoginUserMethod",
+    "ChangeUserEmailCommand",
+    "ChangeUserEmailMethod",
+    "ChangeUserEmailPayload",
+    "ChangeUserPasswordCommand",
+    "ChangeUserPasswordMethod",
+    "ChangeUserPasswordPayload",
+    "EmailAlreadyExistsException",
     "InvalidEmailOrPasswordException",
-    "RegisterUserCommand",
-    "RegisterUserMethod",
-    "StudentNotFoundException",
+    "InvalidPasswordException",
     "InvalidStudentDataException",
     "StudentAlreadyRegisteredException",
-    "EmailAlreadyRegisteredException",
+    "StudentNotFoundException",
+    "UserNotFoundException",
+    "LoginUserCommand",
+    "LoginUserMethod",
+    "RegisterUserCommand",
+    "RegisterUserMethod",
+    "UpdateStudentProfileCommand",
+    "UpdateStudentProfileMethod",
+    "UpdateStudentProfilePayload",
 ]
