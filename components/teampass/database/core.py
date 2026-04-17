@@ -67,7 +67,10 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
     async def save(self, obj: Model) -> Model:
         self._session.add(obj)
         await self._session.flush()
-        await self._session.refresh(obj)
+        await self._session.refresh(
+            obj,
+            attribute_names=[c.key for c in obj.__table__.columns],
+        )
         return obj
 
     async def find_by_id(
@@ -76,7 +79,8 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         return await self._session.get(
             self.model,
             id,
-            options=self.get_options(includes) if includes is not None else [],
+            options=self.get_options(includes) if includes is not None else None,
+            populate_existing=includes is not None,
         )
 
     async def list(

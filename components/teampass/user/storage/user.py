@@ -91,6 +91,7 @@ class UserDAO(BaseDAO[User, UUID, UserLoadEnum]):
         stmt = select(User).where(User.student_id == student_id)
         if includes is not None:
             stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -100,6 +101,7 @@ class UserDAO(BaseDAO[User, UUID, UserLoadEnum]):
         stmt = select(User).where(User.email == email)
         if includes is not None:
             stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 

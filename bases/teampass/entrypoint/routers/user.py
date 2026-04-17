@@ -21,7 +21,7 @@ from teampass.user import (
     UpdateStudentProfilePayload,
     User,
 )
-from teampass.user.storage import UserDAO
+from teampass.user.storage import UserDAO, UserLoadEnum
 
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
@@ -53,7 +53,7 @@ async def get_me(
     logger = _logger.bind(user_id=str(user_id))
     logger.info("processing_get_me_request")
 
-    user = await user_dao.find_by_id_with_loaded_student(user_id)
+    user = await user_dao.find_by_id(user_id, includes=[UserLoadEnum.STUDENT])
     if user is None:
         logger.error("user_not_found")
         raise CustomHTTPException(
@@ -76,7 +76,7 @@ async def get_user(
     logger = _logger.bind(user_id=str(user_id))
     logger.info("processing_get_user_request")
 
-    user = await user_dao.find_by_id_with_loaded_student(user_id)
+    user = await user_dao.find_by_id(user_id, includes=[UserLoadEnum.STUDENT])
     if user is None:
         logger.error("user_not_found")
         raise CustomHTTPException(
@@ -172,7 +172,9 @@ async def get_my_profile(
     logger = _logger.bind(user_id=str(user_id))
     logger.info("processing_get_my_profile_request")
 
-    user = await student_dao.find_by_id_with_loaded_student_profile(user_id)
+    user = await student_dao.find_by_id(
+        user_id, includes=[UserLoadEnum.STUDENT_PROFILE]
+    )
     if user is None:
         logger.error("user_not_found")
         raise CustomHTTPException(
@@ -195,7 +197,9 @@ async def get_user_profile(
     logger = _logger.bind(user_id=str(user_id))
     logger.info("processing_get_user_profile_request")
 
-    user = await student_dao.find_by_id_with_loaded_student_profile(user_id)
+    user = await student_dao.find_by_id(
+        user_id, includes=[UserLoadEnum.STUDENT_PROFILE]
+    )
     if user is None:
         logger.error("user_not_found")
         raise CustomHTTPException(

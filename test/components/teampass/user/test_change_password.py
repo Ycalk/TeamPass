@@ -42,7 +42,7 @@ class TestChangePasswordMethod:
 
         assert updated_user is not None
 
-        user_in_db = await user_dao.find_by_id_with_loaded_student(user.id)
+        user_in_db = await user_dao.find_by_id(user.id)
         assert user_in_db is not None
         assert password_hasher.verify(user_in_db.password_hash, "newstrongpassword")
 

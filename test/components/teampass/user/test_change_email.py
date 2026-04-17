@@ -44,9 +44,9 @@ class TestChangeEmailMethod:
         assert updated_user is not None
         assert updated_user.email == "new@example.com"
 
-        user_in_db = await user_dao.find_by_id_with_loaded_student(user.id)
+        user_in_db = await user_dao.find_by_id(user.id)
         assert user_in_db is not None
-        assert getattr(user_in_db, "email") == "new@example.com"
+        assert user_in_db.email == "new@example.com"
 
     async def test_change_email_user_not_found(
         self,

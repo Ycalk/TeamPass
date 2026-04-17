@@ -6,7 +6,7 @@ from opentelemetry import trace
 from pydantic import BaseModel, StringConstraints
 from teampass.domain_core import DomainMethod
 from teampass.user.dto import StudentProfile
-from teampass.user.storage import UserDAO
+from teampass.user.storage import UserDAO, UserLoadEnum
 
 from .exceptions import UserNotFoundException
 
@@ -47,8 +47,9 @@ class UpdateStudentProfileMethod(
 
             logger.info("updating_student_profile")
 
-            user = await self.user_dao.find_by_id_with_loaded_student_profile(
-                command.user_id
+            user = await self.user_dao.find_by_id(
+                command.user_id,
+                includes=[UserLoadEnum.STUDENT_PROFILE, UserLoadEnum.STUDENT],
             )
             if user is None:
                 logger.error("user_not_found")
@@ -81,7 +82,6 @@ class UpdateStudentProfileMethod(
 
             await self.user_dao.save(user)
             await self.user_dao.commit()
-            await user.awaitable_attrs.student
 
             logger.info("student_profile_updated")
 

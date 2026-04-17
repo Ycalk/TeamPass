@@ -8,7 +8,7 @@ from opentelemetry import trace
 from pydantic import BaseModel, SecretStr, StringConstraints
 from teampass.domain_core import DomainMethod
 from teampass.user.dto import User
-from teampass.user.storage import UserDAO
+from teampass.user.storage import UserDAO, UserLoadEnum
 
 from .exceptions import InvalidPasswordException, UserNotFoundException
 
@@ -42,7 +42,9 @@ class ChangeUserPasswordMethod(DomainMethod[ChangeUserPasswordCommand, User]):
 
             logger.info("changing_user_password")
 
-            user = await self.user_dao.find_by_id_with_loaded_student(command.user_id)
+            user = await self.user_dao.find_by_id(
+                command.user_id, includes=[UserLoadEnum.STUDENT]
+            )
             if user is None:
                 logger.error("user_not_found")
                 raise UserNotFoundException(command.user_id)
