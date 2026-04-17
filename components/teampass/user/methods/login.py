@@ -7,7 +7,7 @@ from opentelemetry import trace
 from pydantic import BaseModel, EmailStr, SecretStr
 from teampass.domain_core import DomainMethod
 from teampass.user.dto import User
-from teampass.user.storage import UserDAO
+from teampass.user.storage import UserDAO, UserLoadEnum
 
 from .exceptions import InvalidEmailOrPasswordException
 
@@ -37,7 +37,9 @@ class LoginUserMethod(DomainMethod[LoginUserCommand, User]):
 
             logger.info("login_user")
 
-            user = await self.user_dao.find_by_email(command.email)
+            user = await self.user_dao.find_by_email(
+                command.email, includes=[UserLoadEnum.STUDENT]
+            )
             if user is None:
                 raise InvalidEmailOrPasswordException(command.email)
 
@@ -53,5 +55,4 @@ class LoginUserMethod(DomainMethod[LoginUserCommand, User]):
                 raise InvalidEmailOrPasswordException(command.email) from e
             logger.info("password_verified")
 
-            await user.awaitable_attrs.student
             return User.from_persistent(user)

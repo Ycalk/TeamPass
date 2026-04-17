@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from enum import StrEnum
+from typing import override
 from uuid import UUID
 
 from sqlalchemy import String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 
@@ -18,9 +22,18 @@ class Admin(BaseModel):
     password_hash: Mapped[str] = mapped_column(String(255))
 
 
-class AdminDAO(BaseDAO[Admin, UUID]):
+class AdminLoadEnum(StrEnum):
+    pass
+
+
+class AdminDAO(BaseDAO[Admin, UUID, AdminLoadEnum]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Admin)
+
+    @property
+    @override
+    def _load_mapper(self) -> dict[AdminLoadEnum, ORMOption | Sequence[ORMOption]]:
+        return {}
 
     async def create(
         self,

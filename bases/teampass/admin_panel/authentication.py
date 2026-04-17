@@ -1,26 +1,58 @@
 from datetime import datetime, timedelta, timezone
-from typing import Final, override
+from enum import StrEnum
+from typing import Final, Self, override
+from uuid import UUID
 
 import structlog
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from dishka.integrations.starlette import FromDishka
 from opentelemetry import trace
-from pydantic import SecretStr, ValidationError
+from pydantic import BaseModel, SecretStr, ValidationError, model_validator
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
-from teampass.admin import LoginAdminCommand, LoginAdminMethod
+from teampass.admin import (
+    InvalidUsernameOrPasswordException,
+    LoginAdminCommand,
+    LoginAdminMethod,
+)
 from teampass.admin.storage import AdminDAO
-from teampass.admin_panel.settings import AdminPanelSettings
-from teampass.admin_panel.utils import (
+from teampass.admin_panel.inject import (
     INJECT,
-    AdminSession,
-    AdminType,
     inject_from_request,
 )
+from teampass.admin_panel.settings import AdminPanelSettings
 
 _logger: Final[structlog.BoundLogger] = structlog.get_logger()
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
+
+
+class AdminType(StrEnum):
+    SUPER_ADMIN = "super_admin"
+    ADMIN = "admin"
+
+
+class AdminSession(BaseModel):
+    id: UUID | None
+    password_hash: str | None
+    admin_type: AdminType
+    expires_at: datetime
+
+    @model_validator(mode="after")
+    def validate_id_for_admin_type(self) -> Self:
+        if self.admin_type == AdminType.SUPER_ADMIN and (
+            self.id is not None or self.password_hash is None
+        ):
+            raise ValueError(
+                "id must be None and password_hash must not be None for super admin"
+            )
+        if self.admin_type != AdminType.SUPER_ADMIN and (
+            self.id is None or self.password_hash is not None
+        ):
+            raise ValueError(
+                "id must not be None and password_hash must be None for regular admin"
+            )
+        return self
 
 
 class AdminAuth(AuthenticationBackend):
@@ -62,12 +94,17 @@ class AdminAuth(AuthenticationBackend):
                 return True
 
             span.set_attribute("admin.type", "admin")
-            admin = await login_admin_method(
-                LoginAdminCommand(
-                    username=username,
-                    plain_password=SecretStr(password),
+            try:
+                admin = await login_admin_method(
+                    LoginAdminCommand(
+                        username=username,
+                        plain_password=SecretStr(password),
+                    )
                 )
-            )
+            except InvalidUsernameOrPasswordException:
+                _logger.error("invalid_username_or_password")
+                return False
+
             span.set_attribute("admin.id", str(admin.id))
             admin_session = AdminSession(
                 id=admin.id,

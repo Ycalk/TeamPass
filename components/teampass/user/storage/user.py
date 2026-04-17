@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, override
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, String, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
+from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
+from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 from .student_profile import StudentProfile
@@ -48,9 +51,24 @@ class User(BaseModel):
     )
 
 
-class UserDAO(BaseDAO[User, UUID]):
+class UserLoadEnum(StrEnum):
+    STUDENT = "student"
+    TEAM = "team"
+    STUDENT_PROFILE = "student_profile"
+
+
+class UserDAO(BaseDAO[User, UUID, UserLoadEnum]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, User)
+
+    @property
+    @override
+    def _load_mapper(self) -> dict[UserLoadEnum, ORMOption | Sequence[ORMOption]]:
+        return {
+            UserLoadEnum.STUDENT: joinedload(User.student),
+            UserLoadEnum.TEAM: joinedload(User.team),
+            UserLoadEnum.STUDENT_PROFILE: joinedload(User.student_profile),
+        }
 
     async def create(
         self,
@@ -67,31 +85,21 @@ class UserDAO(BaseDAO[User, UUID]):
         await self.save(obj)
         return obj
 
-    async def find_by_student_id(self, student_id: UUID) -> User | None:
-        stmt = select(User).where(User.student_id == student_id)
-        result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def find_by_email(self, email: str) -> User | None:
-        stmt = select(User).where(User.email == email)
-        result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def find_by_id_with_loaded_student(self, user_id: UUID) -> User | None:
-        stmt = (
-            select(User).where(User.id == user_id).options(selectinload(User.student))
-        )
-        result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def find_by_id_with_loaded_student_profile(
-        self, user_id: UUID
+    async def find_by_student_id(
+        self, student_id: UUID, includes: Sequence[UserLoadEnum] | None = None
     ) -> User | None:
-        stmt = (
-            select(User)
-            .where(User.id == user_id)
-            .options(selectinload(User.student_profile), selectinload(User.student))
-        )
+        stmt = select(User).where(User.student_id == student_id)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_by_email(
+        self, email: str, includes: Sequence[UserLoadEnum] | None = None
+    ) -> User | None:
+        stmt = select(User).where(User.email == email)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 

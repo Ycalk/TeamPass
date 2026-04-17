@@ -5,12 +5,8 @@ from pydantic import SecretStr
 from sqladmin import BaseView, expose
 from starlette.requests import Request
 from teampass.admin import ChangeAdminPasswordCommand, ChangeAdminPasswordMethod
-from teampass.admin_panel.utils import (
-    INJECT,
-    AdminSession,
-    AdminType,
-    inject_from_request,
-)
+from teampass.admin_panel.authentication import AdminSession, AdminType
+from teampass.admin_panel.inject import INJECT, inject_from_request
 from teampass.domain_core import DomainException
 
 

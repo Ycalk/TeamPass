@@ -1,0 +1,36 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fa-solid fa-file-csv"></i> Импорт студентов CSV</h4>
+                </div>
+                <div class="card-body">
+                    {% if message %}
+                    <div class="alert alert-info">{{ message }}</div>
+                    {% endif %}
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">CSV файл</label>
+                            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                        </div>
+                        <p class="small text-muted">
+                            <strong>Формат CSV:</strong><br>
+                            student_id,first_name,last_name,patronymic<br>
+                            STUDENT-001,Илья,Иванов,Сергеевич<br>
+                            STUDENT-002,Петр,Петров,
+                        </p>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-upload"></i> Импортировать
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
