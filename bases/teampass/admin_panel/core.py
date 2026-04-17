@@ -17,7 +17,14 @@ from teampass.user import UserProvider
 from uvicorn import Config, Server
 
 from .settings import AdminPanelSettings
-from .views import AdminAuth, AdminView, ChangePasswordView
+from .views import (
+    AdminAuth,
+    AdminView,
+    ChangePasswordView,
+    StudentImportView,
+    StudentView,
+    UserView,
+)
 
 
 class AdminPanelProvider(Provider):
@@ -70,6 +77,9 @@ async def build_app() -> Starlette:
     )
     admin.add_view(AdminView)
     admin.add_view(ChangePasswordView)
+    admin.add_view(StudentView)
+    admin.add_view(UserView)
+    admin.add_base_view(StudentImportView)
 
     return app
 

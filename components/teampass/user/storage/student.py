@@ -27,6 +27,9 @@ class Student(BaseModel):
         back_populates="student", passive_deletes=True
     )
 
+    def __repr__(self) -> str:
+        return f"Student-{self.student_id}: {self.first_name} {self.last_name}"
+
 
 class StudentDAO(BaseDAO[Student, UUID]):
     def __init__(self, session: AsyncSession) -> None:

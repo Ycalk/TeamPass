@@ -47,6 +47,9 @@ class User(BaseModel):
         back_populates="user", passive_deletes=True
     )
 
+    def __repr__(self) -> str:
+        return f"User({self.email})"
+
 
 class UserDAO(BaseDAO[User, UUID]):
     def __init__(self, session: AsyncSession) -> None:
