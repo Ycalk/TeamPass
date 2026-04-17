@@ -1,12 +1,26 @@
-from collections.abc import Sequence
-from typing import ClassVar
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar
 
-from pydantic import ValidationError
 from sqladmin import ModelView
 from sqladmin._types import MODEL_ATTR
-from starlette.requests import Request
-from teampass.admin_panel.utils import AdminSession, AdminType
+from sqlalchemy import Column
+from teampass.admin_panel.formatters import created_at_formatter, updated_at_formatter
 from teampass.user.storage.user import User as UserModel
+
+
+def student_formatter(model: type, _: Column[Any]) -> str:
+    if not isinstance(model, UserModel):
+        raise TypeError("Model must be an instance of UserModel")
+    return (
+        f"{model.student.last_name} {model.student.first_name} "
+        f"{model.student.patronymic}"
+    )
+
+
+def team_formatter(model: type, _: Column[Any]) -> str:
+    if not isinstance(model, UserModel):
+        raise TypeError("Model must be an instance of UserModel")
+    return model.team.name if model.team else ""
 
 
 class UserView(ModelView, model=UserModel):
@@ -15,43 +29,56 @@ class UserView(ModelView, model=UserModel):
     category: ClassVar[str] = "Пользователи"
     icon: ClassVar[str] = "fa-solid fa-users"
 
+    column_labels: ClassVar[dict[MODEL_ATTR, str]] = {
+        UserModel.email: "Email",
+        UserModel.student: "Студент",
+        UserModel.student_profile: "Профиль",
+        UserModel.team: "Команда",
+        UserModel.created_at: "Дата создания (UTC)",
+        UserModel.updated_at: "Дата обновления (UTC)",
+    }
+
     column_list: ClassVar[Sequence[MODEL_ATTR]] = [
-        UserModel.id,
         UserModel.email,
-        UserModel.student_id,
-        UserModel.is_captain,
+        UserModel.student,
+        UserModel.student_profile,
+        UserModel.team,
     ]
+    column_formatters: ClassVar[
+        dict[MODEL_ATTR, Callable[[type, Column[Any]], str]]
+    ] = {
+        UserModel.student: student_formatter,
+        UserModel.student_profile: lambda model, _: "Профиль",
+        UserModel.team: team_formatter,
+    }
+
+    column_details_list: ClassVar[Sequence[MODEL_ATTR]] = [
+        UserModel.email,
+        UserModel.student,
+        UserModel.student_profile,
+        UserModel.team,
+        UserModel.created_at,
+        UserModel.updated_at,
+    ]
+    column_formatters_detail: ClassVar[
+        dict[MODEL_ATTR, Callable[[type, Column[Any]], str]]
+    ] = {
+        UserModel.student: student_formatter,
+        UserModel.student_profile: lambda model, _: "Профиль",
+        UserModel.team: team_formatter,
+        UserModel.created_at: created_at_formatter,
+        UserModel.updated_at: updated_at_formatter,
+    }
 
     column_searchable_list: ClassVar[Sequence[MODEL_ATTR]] = [
         UserModel.email,
-        UserModel.student_id,
     ]
 
-    form_excluded_columns = (
+    form_excluded_columns: ClassVar[Sequence[MODEL_ATTR]] = (
         UserModel.created_at,
         UserModel.updated_at,
     )
 
-    column_formatters = {
-        UserModel.student: lambda m, a, b: (
-            m.student.student_id if m.student else "Нет студента"
-        )
-    }
-
-    can_create: ClassVar[bool] = True
+    can_create: ClassVar[bool] = False
     can_edit: ClassVar[bool] = True
     can_delete: ClassVar[bool] = True
-
-    def is_accessible(self, request: Request) -> bool:
-        try:
-            admin_session = AdminSession.model_validate(request.session)
-            return admin_session.admin_type in (AdminType.SUPER_ADMIN, AdminType.ADMIN)
-        except ValidationError:
-            return False
-
-    def is_visible(self, request: Request) -> bool:
-        try:
-            admin_session = AdminSession.model_validate(request.session)
-            return admin_session.admin_type in (AdminType.SUPER_ADMIN, AdminType.ADMIN)
-        except ValidationError:
-            return False

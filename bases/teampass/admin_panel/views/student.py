@@ -1,12 +1,17 @@
-from collections.abc import Sequence
-from typing import ClassVar
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar
 
-from pydantic import ValidationError
 from sqladmin import ModelView
 from sqladmin._types import MODEL_ATTR
-from starlette.requests import Request
-from teampass.admin_panel.utils import AdminSession, AdminType
+from sqlalchemy import Column
+from teampass.admin_panel.formatters import created_at_formatter, updated_at_formatter
 from teampass.user.storage.student import Student as StudentModel
+
+
+def user_formatter(model: type, _: Column[Any]) -> str:
+    if not isinstance(model, StudentModel):
+        raise TypeError("Model must be an instance of StudentModel")
+    return "Пользователь" if model.user else ""
 
 
 class StudentView(ModelView, model=StudentModel):
@@ -15,12 +20,38 @@ class StudentView(ModelView, model=StudentModel):
     category: ClassVar[str] = "Пользователи"
     icon: ClassVar[str] = "fa-solid fa-user-graduate"
 
+    column_labels: ClassVar[dict[MODEL_ATTR, str]] = {
+        StudentModel.student_id: "№ студенческого билета",
+        StudentModel.first_name: "Имя",
+        StudentModel.last_name: "Фамилия",
+        StudentModel.patronymic: "Отчество",
+        StudentModel.created_at: "Дата создания (UTC)",
+        StudentModel.updated_at: "Дата обновления (UTC)",
+        StudentModel.user: "Пользователь",
+    }
+
     column_list: ClassVar[Sequence[MODEL_ATTR]] = [
         StudentModel.student_id,
-        StudentModel.first_name,
         StudentModel.last_name,
+        StudentModel.first_name,
         StudentModel.patronymic,
     ]
+    column_details_list: ClassVar[Sequence[MODEL_ATTR]] = [
+        StudentModel.student_id,
+        StudentModel.last_name,
+        StudentModel.first_name,
+        StudentModel.patronymic,
+        StudentModel.created_at,
+        StudentModel.updated_at,
+        StudentModel.user,
+    ]
+    column_formatters_detail: ClassVar[
+        dict[MODEL_ATTR, Callable[[type, Column[Any]], str]]
+    ] = {
+        StudentModel.created_at: created_at_formatter,
+        StudentModel.updated_at: updated_at_formatter,
+        StudentModel.user: user_formatter,
+    }
 
     column_searchable_list: ClassVar[Sequence[MODEL_ATTR]] = [
         StudentModel.student_id,
@@ -28,7 +59,7 @@ class StudentView(ModelView, model=StudentModel):
         StudentModel.last_name,
     ]
 
-    form_excluded_columns = (
+    form_excluded_columns: ClassVar[Sequence[MODEL_ATTR]] = (
         StudentModel.created_at,
         StudentModel.updated_at,
         StudentModel.user,
@@ -37,17 +68,3 @@ class StudentView(ModelView, model=StudentModel):
     can_create: ClassVar[bool] = True
     can_edit: ClassVar[bool] = True
     can_delete: ClassVar[bool] = True
-
-    def is_accessible(self, request: Request) -> bool:
-        try:
-            admin_session = AdminSession.model_validate(request.session)
-            return admin_session.admin_type in (AdminType.SUPER_ADMIN, AdminType.ADMIN)
-        except ValidationError:
-            return False
-
-    def is_visible(self, request: Request) -> bool:
-        try:
-            admin_session = AdminSession.model_validate(request.session)
-            return admin_session.admin_type in (AdminType.SUPER_ADMIN, AdminType.ADMIN)
-        except ValidationError:
-            return False

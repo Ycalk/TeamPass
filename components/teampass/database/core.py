@@ -1,7 +1,13 @@
-from abc import ABC
-from collections.abc import AsyncIterable, AsyncIterator, Callable, Sequence
+from abc import ABC, abstractmethod
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterable,
+    Callable,
+    Sequence,
+)
 from contextlib import asynccontextmanager
 from datetime import datetime
+from enum import StrEnum
 from typing import Any, NewType
 
 import structlog
@@ -18,6 +24,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm.interfaces import ORMOption
 from sqlalchemy.types import TIMESTAMP
 
 from .settings import DatabaseSettings
@@ -35,10 +42,27 @@ class BaseModel(AsyncAttrs, DeclarativeBase):
     )
 
 
-class BaseDAO[Model: BaseModel, Id](ABC):
+class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
     def __init__(self, session: AsyncSession, model: type[Model]):
         self._session: AsyncSession = session
         self.model: type[Model] = model
+
+    @property
+    @abstractmethod
+    def _load_mapper(self) -> dict[LoadEnum, ORMOption | Sequence[ORMOption]]:
+        pass
+
+    def get_options(self, includes: Sequence[LoadEnum]) -> Sequence[ORMOption]:
+        options: list[ORMOption] = []
+        for include in includes:
+            option = self._load_mapper.get(include)
+            if option is None:
+                raise ValueError(f"Invalid include option: {include}")
+            if isinstance(option, Sequence):
+                options.extend(option)
+            else:
+                options.append(option)
+        return options
 
     async def save(self, obj: Model) -> Model:
         self._session.add(obj)
@@ -46,11 +70,24 @@ class BaseDAO[Model: BaseModel, Id](ABC):
         await self._session.refresh(obj)
         return obj
 
-    async def find_by_id(self, id: Id) -> Model | None:
-        return await self._session.get(self.model, id)
+    async def find_by_id(
+        self, id: Id, includes: Sequence[LoadEnum] | None = None
+    ) -> Model | None:
+        return await self._session.get(
+            self.model,
+            id,
+            options=self.get_options(includes) if includes is not None else [],
+        )
 
-    async def list(self, skip: int = 0, limit: int | None = None) -> Sequence[Model]:
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int | None = None,
+        includes: Sequence[LoadEnum] | None = None,
+    ) -> Sequence[Model]:
         stmt = select(self.model).offset(skip)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
         if limit is not None:
             stmt = stmt.limit(limit)
         result = (await self._session.execute(stmt)).scalars().all()
@@ -63,7 +100,7 @@ class BaseDAO[Model: BaseModel, Id](ABC):
         await self._session.commit()
 
 
-class BaseDAOFactory[DAO: BaseDAO[Any, Any]]:
+class BaseDAOFactory[DAO: BaseDAO[Any, Any, Any]]:
     def __init__(
         self,
         session_maker: async_sessionmaker[AsyncSession],
@@ -73,7 +110,7 @@ class BaseDAOFactory[DAO: BaseDAO[Any, Any]]:
         self.dao_cls: Callable[[AsyncSession], DAO] = dao_cls
 
     @asynccontextmanager
-    async def __call__(self) -> AsyncIterator[DAO]:
+    async def __call__(self) -> AsyncGenerator[DAO, None]:
         async with self._session_maker() as session:
             yield self.dao_cls(session)
 
@@ -87,7 +124,7 @@ class _DAOFactory:
     def __init__(self, session: AsyncSession) -> None:
         self._session: AsyncSession = session
 
-    def __call__[T_DAO: BaseDAO[Any, Any]](
+    def __call__[T_DAO: BaseDAO[Any, Any, Any]](
         self,
         dao_cls: Callable[[AsyncSession], T_DAO],
     ) -> T_DAO:
@@ -102,7 +139,7 @@ class MultipleDAOFactory:
         self._session_maker: async_sessionmaker[AsyncSession] = session_maker
 
     @asynccontextmanager
-    async def __call__(self) -> AsyncIterator[_DAOFactory]:
+    async def __call__(self) -> AsyncGenerator[_DAOFactory, None]:
         async with self._session_maker() as session:
             yield _DAOFactory(session)
 

@@ -16,9 +16,9 @@ from teampass.team import TeamProvider
 from teampass.user import UserProvider
 from uvicorn import Config, Server
 
+from .authentication import AdminAuth
 from .settings import AdminPanelSettings
 from .views import (
-    AdminAuth,
     AdminView,
     ChangePasswordView,
     StudentImportView,

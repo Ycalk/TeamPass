@@ -11,7 +11,7 @@ from teampass.domain_core import (
     DomainNotFoundException,
 )
 from teampass.user.dto import User
-from teampass.user.storage import StudentDAO, UserDAO
+from teampass.user.storage import StudentDAO, StudentLoadEnum, UserDAO
 
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
@@ -85,7 +85,9 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
 
             logger.info("registering_user")
 
-            student = await self.student_dao.find_by_student_id(command.student_id)
+            student = await self.student_dao.find_by_student_id(
+                command.student_id, includes=[StudentLoadEnum.USER]
+            )
             if student is None:
                 raise StudentNotFoundException(command.student_id)
             if (
@@ -106,9 +108,8 @@ class RegisterUserMethod(DomainMethod[RegisterUserCommand, User]):
                     command.patronymic,
                 )
 
-            user = await self.user_dao.find_by_student_id(student.id)
-            if user is not None:
-                span.set_attribute("user.id", str(user.id))
+            if student.user is not None:
+                span.set_attribute("user.id", str(student.user.id))
                 logger.error("student_already_registered")
                 raise StudentAlreadyRegisteredException(command.student_id)
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
+from enum import StrEnum
+from typing import TYPE_CHECKING, override
 from uuid import UUID
 
 from sqlalchemy import String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
+from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 if TYPE_CHECKING:
@@ -27,13 +30,21 @@ class Student(BaseModel):
         back_populates="student", passive_deletes=True
     )
 
-    def __repr__(self) -> str:
-        return f"Student-{self.student_id}: {self.first_name} {self.last_name}"
+
+class StudentLoadEnum(StrEnum):
+    USER = "user"
 
 
-class StudentDAO(BaseDAO[Student, UUID]):
+class StudentDAO(BaseDAO[Student, UUID, StudentLoadEnum]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Student)
+
+    @property
+    @override
+    def _load_mapper(self) -> dict[StudentLoadEnum, ORMOption | Sequence[ORMOption]]:
+        return {
+            StudentLoadEnum.USER: joinedload(Student.user),
+        }
 
     async def create(
         self,
@@ -51,8 +62,12 @@ class StudentDAO(BaseDAO[Student, UUID]):
         await self.save(obj)
         return obj
 
-    async def find_by_student_id(self, student_id: str) -> Student | None:
+    async def find_by_student_id(
+        self, student_id: str, includes: Sequence[StudentLoadEnum] | None = None
+    ) -> Student | None:
         stmt = select(Student).where(Student.student_id == student_id)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
