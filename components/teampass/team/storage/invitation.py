@@ -85,6 +85,34 @@ class TeamInvitationDAO(BaseDAO[TeamInvitation, UUID, TeamInvitationLoadEnum]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def find_by_team_id(
+        self,
+        team_id: UUID,
+        includes: list[TeamInvitationLoadEnum] | None = None,
+    ) -> list[TeamInvitation]:
+        stmt = select(TeamInvitation).where(
+            TeamInvitation.team_id == team_id,
+        )
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def find_by_user_id(
+        self,
+        user_id: UUID,
+        includes: list[TeamInvitationLoadEnum] | None = None,
+    ) -> list[TeamInvitation]:
+        stmt = select(TeamInvitation).where(
+            TeamInvitation.user_id == user_id,
+        )
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
 
 class TeamInvitationDAOFactory(BaseDAOFactory[TeamInvitationDAO]):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:

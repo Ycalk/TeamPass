@@ -69,11 +69,12 @@ async def get_me(
 async def get_user(
     user_dao: FromDishka[UserDAO],
     user_id: UUID,
-    _: UUID = Depends(get_current_user_id),
+    request_user_id: UUID = Depends(get_current_user_id),
 ) -> User:
     span = trace.get_current_span()
     span.set_attribute("user.id", str(user_id))
-    logger = _logger.bind(user_id=str(user_id))
+    span.set_attribute("request_user.id", str(request_user_id))
+    logger = _logger.bind(user_id=str(user_id), request_user_id=str(request_user_id))
     logger.info("processing_get_user_request")
 
     user = await user_dao.find_by_id(user_id, includes=[UserLoadEnum.STUDENT])
@@ -190,11 +191,12 @@ async def get_my_profile(
 async def get_user_profile(
     student_dao: FromDishka[UserDAO],
     user_id: UUID,
-    _: UUID = Depends(get_current_user_id),
+    request_user_id: UUID = Depends(get_current_user_id),
 ) -> StudentProfile:
     span = trace.get_current_span()
     span.set_attribute("user.id", str(user_id))
-    logger = _logger.bind(user_id=str(user_id))
+    span.set_attribute("request_user.id", str(request_user_id))
+    logger = _logger.bind(user_id=str(user_id), request_user_id=str(request_user_id))
     logger.info("processing_get_user_profile_request")
 
     user = await student_dao.find_by_id(
