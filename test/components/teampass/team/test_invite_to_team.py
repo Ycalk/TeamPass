@@ -53,7 +53,7 @@ class TestInviteToTeamMethod:
             student_id=student_invited.id,
         )
 
-        command = InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+        command = InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         invitation_dto = await invite_to_team_method(command)
 
         assert invitation_dto is not None
@@ -67,10 +67,10 @@ class TestInviteToTeamMethod:
         self,
         invite_to_team_method: InviteToTeamMethod,
     ) -> None:
-        command = InviteToTeamCommand(inviter_id=uuid4(), invited_user_id=uuid4())
+        command = InviteToTeamCommand(user_id=uuid4(), invited_user_id=uuid4())
         with pytest.raises(UserNotFoundException) as exc_info:
             await invite_to_team_method(command)
-        assert exc_info.value.user_id == command.inviter_id
+        assert exc_info.value.user_id == command.user_id
 
     async def test_inviter_not_in_team(
         self,
@@ -87,7 +87,7 @@ class TestInviteToTeamMethod:
             student_id=student.id,
         )
 
-        command = InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=uuid4())
+        command = InviteToTeamCommand(user_id=inviter.id, invited_user_id=uuid4())
         with pytest.raises(UserNotInTeamException) as exc_info:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == inviter.id
@@ -123,7 +123,7 @@ class TestInviteToTeamMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = InviteToTeamCommand(inviter_id=member.id, invited_user_id=uuid4())
+        command = InviteToTeamCommand(user_id=member.id, invited_user_id=uuid4())
         with pytest.raises(UserNotCaptainException) as exc_info:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == member.id
@@ -150,7 +150,7 @@ class TestInviteToTeamMethod:
 
         fake_invited_id = uuid4()
         command = InviteToTeamCommand(
-            inviter_id=inviter.id, invited_user_id=fake_invited_id
+            user_id=inviter.id, invited_user_id=fake_invited_id
         )
         with pytest.raises(UserNotFoundException) as exc_info:
             await invite_to_team_method(command)
@@ -189,7 +189,7 @@ class TestInviteToTeamMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team B", user_id=invited.id))
 
-        command = InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+        command = InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         with pytest.raises(UserAlreadyInTeamException) as exc_info:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == invited.id
@@ -220,7 +220,7 @@ class TestInviteToTeamMethod:
             student_id=student_invited.id,
         )
 
-        command = InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+        command = InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         await invite_to_team_method(command)
 
         with pytest.raises(InvitationAlreadyExistsException) as exc_info:

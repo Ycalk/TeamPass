@@ -36,7 +36,7 @@ class TestRenameTeamMethod:
             CreateTeamCommand(name="Old Name", user_id=captain.id)
         )
 
-        command = RenameTeamCommand(name="New Name", initiator_id=captain.id)
+        command = RenameTeamCommand(name="New Name", user_id=captain.id)
         team_dto = await rename_team_method(command)
 
         assert team_dto.id == team.id
@@ -46,7 +46,7 @@ class TestRenameTeamMethod:
         self,
         rename_team_method: RenameTeamMethod,
     ) -> None:
-        command = RenameTeamCommand(name="New Name", initiator_id=uuid4())
+        command = RenameTeamCommand(name="New Name", user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await rename_team_method(command)
 
@@ -65,7 +65,7 @@ class TestRenameTeamMethod:
             student_id=student.id,
         )
 
-        command = RenameTeamCommand(name="New Name", initiator_id=user.id)
+        command = RenameTeamCommand(name="New Name", user_id=user.id)
         with pytest.raises(UserNotInTeamException):
             await rename_team_method(command)
 
@@ -102,6 +102,6 @@ class TestRenameTeamMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = RenameTeamCommand(name="New Name", initiator_id=member.id)
+        command = RenameTeamCommand(name="New Name", user_id=member.id)
         with pytest.raises(UserNotCaptainException):
             await rename_team_method(command)

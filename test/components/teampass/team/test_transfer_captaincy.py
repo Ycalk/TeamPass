@@ -51,9 +51,7 @@ class TestTransferCaptaincyMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = TransferCaptaincyCommand(
-            initiator_id=captain.id, new_captain_id=member.id
-        )
+        command = TransferCaptaincyCommand(user_id=captain.id, new_captain_id=member.id)
         team_dto = await transfer_captaincy_method(command)
 
         assert team_dto.captain is not None
@@ -71,7 +69,7 @@ class TestTransferCaptaincyMethod:
         self,
         transfer_captaincy_method: TransferCaptaincyMethod,
     ) -> None:
-        command = TransferCaptaincyCommand(initiator_id=uuid4(), new_captain_id=uuid4())
+        command = TransferCaptaincyCommand(user_id=uuid4(), new_captain_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await transfer_captaincy_method(command)
 
@@ -93,7 +91,7 @@ class TestTransferCaptaincyMethod:
             student_id=student.id,
         )
 
-        command = TransferCaptaincyCommand(initiator_id=user.id, new_captain_id=uuid4())
+        command = TransferCaptaincyCommand(user_id=user.id, new_captain_id=uuid4())
         with pytest.raises(UserNotInTeamException):
             await transfer_captaincy_method(command)
 
@@ -130,9 +128,7 @@ class TestTransferCaptaincyMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = TransferCaptaincyCommand(
-            initiator_id=member.id, new_captain_id=captain.id
-        )
+        command = TransferCaptaincyCommand(user_id=member.id, new_captain_id=captain.id)
         with pytest.raises(UserNotCaptainException):
             await transfer_captaincy_method(command)
 
@@ -153,9 +149,7 @@ class TestTransferCaptaincyMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team", user_id=captain.id))
 
-        command = TransferCaptaincyCommand(
-            initiator_id=captain.id, new_captain_id=uuid4()
-        )
+        command = TransferCaptaincyCommand(user_id=captain.id, new_captain_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await transfer_captaincy_method(command)
 
@@ -186,8 +180,6 @@ class TestTransferCaptaincyMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team B", user_id=other.id))
 
-        command = TransferCaptaincyCommand(
-            initiator_id=captain.id, new_captain_id=other.id
-        )
+        command = TransferCaptaincyCommand(user_id=captain.id, new_captain_id=other.id)
         with pytest.raises(UsersNotInSameTeamException):
             await transfer_captaincy_method(command)

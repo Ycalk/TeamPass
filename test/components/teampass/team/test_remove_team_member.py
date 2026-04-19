@@ -52,9 +52,7 @@ class TestRemoveTeamMemberMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = RemoveTeamMemberCommand(
-            initiator_id=captain.id, target_user_id=member.id
-        )
+        command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=member.id)
         team_dto = await remove_team_member_method(command)
 
         assert len(team_dto.members) == 1
@@ -68,7 +66,7 @@ class TestRemoveTeamMemberMethod:
         self,
         remove_team_member_method: RemoveTeamMemberMethod,
     ) -> None:
-        command = RemoveTeamMemberCommand(initiator_id=uuid4(), target_user_id=uuid4())
+        command = RemoveTeamMemberCommand(user_id=uuid4(), target_user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await remove_team_member_method(command)
 
@@ -90,7 +88,7 @@ class TestRemoveTeamMemberMethod:
             student_id=student.id,
         )
 
-        command = RemoveTeamMemberCommand(initiator_id=user.id, target_user_id=uuid4())
+        command = RemoveTeamMemberCommand(user_id=user.id, target_user_id=uuid4())
         with pytest.raises(UserNotInTeamException):
             await remove_team_member_method(command)
 
@@ -127,9 +125,7 @@ class TestRemoveTeamMemberMethod:
         await user_dao.save(member)
         await user_dao.commit()
 
-        command = RemoveTeamMemberCommand(
-            initiator_id=member.id, target_user_id=captain.id
-        )
+        command = RemoveTeamMemberCommand(user_id=member.id, target_user_id=captain.id)
         with pytest.raises(UserNotCaptainException):
             await remove_team_member_method(command)
 
@@ -150,9 +146,7 @@ class TestRemoveTeamMemberMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team", user_id=captain.id))
 
-        command = RemoveTeamMemberCommand(
-            initiator_id=captain.id, target_user_id=captain.id
-        )
+        command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=captain.id)
         with pytest.raises(CaptainCannotRemoveSelfException):
             await remove_team_member_method(command)
 
@@ -173,9 +167,7 @@ class TestRemoveTeamMemberMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team", user_id=captain.id))
 
-        command = RemoveTeamMemberCommand(
-            initiator_id=captain.id, target_user_id=uuid4()
-        )
+        command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await remove_team_member_method(command)
 
@@ -206,8 +198,6 @@ class TestRemoveTeamMemberMethod:
         )
         await create_team_method(CreateTeamCommand(name="Team B", user_id=other.id))
 
-        command = RemoveTeamMemberCommand(
-            initiator_id=captain.id, target_user_id=other.id
-        )
+        command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=other.id)
         with pytest.raises(UsersNotInSameTeamException):
             await remove_team_member_method(command)

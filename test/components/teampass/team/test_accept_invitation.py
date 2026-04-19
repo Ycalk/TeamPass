@@ -54,7 +54,7 @@ class TestAcceptInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         command = AcceptInvitationCommand(
@@ -137,7 +137,7 @@ class TestAcceptInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         command = AcceptInvitationCommand(
@@ -182,7 +182,7 @@ class TestAcceptInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         # Invited user somehow joins another team before accepting

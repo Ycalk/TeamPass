@@ -24,7 +24,7 @@ class RenameTeamPayload(BaseModel):
 
 
 class RenameTeamCommand(RenameTeamPayload):
-    initiator_id: UUID
+    user_id: UUID
 
 
 class RenameTeamMethod(DomainMethod[RenameTeamCommand, Team]):
@@ -39,28 +39,28 @@ class RenameTeamMethod(DomainMethod[RenameTeamCommand, Team]):
     @override
     async def __call__(self, command: RenameTeamCommand) -> Team:
         with _tracer.start_as_current_span("team.rename") as span:
-            span.set_attribute("initiator.id", str(command.initiator_id))
+            span.set_attribute("initiator.id", str(command.user_id))
             span.set_attribute("team.new_name", command.name)
             logger = _logger.bind(
-                initiator_id=str(command.initiator_id),
+                initiator_id=str(command.user_id),
                 new_name=command.name,
             )
 
             logger.info("renaming_team")
 
-            initiator = await self.user_dao.find_by_id(command.initiator_id)
+            initiator = await self.user_dao.find_by_id(command.user_id)
             if initiator is None:
                 logger.error("initiator_not_found")
-                raise UserNotFoundException(command.initiator_id)
+                raise UserNotFoundException(command.user_id)
 
             if initiator.team_id is None:
                 logger.error("initiator_has_no_team")
-                raise UserNotInTeamException(command.initiator_id)
+                raise UserNotInTeamException(command.user_id)
 
             if not initiator.is_captain:
                 span.set_attribute("initiator.team_id", str(initiator.team_id))
                 logger.error("initiator_is_not_captain")
-                raise UserNotCaptainException(command.initiator_id)
+                raise UserNotCaptainException(command.user_id)
 
             team = await self.team_dao.find_by_id(initiator.team_id)
             if team is None:

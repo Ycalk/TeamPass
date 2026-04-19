@@ -26,7 +26,7 @@ class InviteToTeamPayload(BaseModel):
 
 
 class InviteToTeamCommand(InviteToTeamPayload):
-    inviter_id: UUID
+    user_id: UUID
 
 
 class InviteToTeamMethod(DomainMethod[InviteToTeamCommand, TeamInvitation]):
@@ -41,28 +41,28 @@ class InviteToTeamMethod(DomainMethod[InviteToTeamCommand, TeamInvitation]):
     @override
     async def __call__(self, command: InviteToTeamCommand) -> TeamInvitation:
         with _tracer.start_as_current_span("team.invite") as span:
-            span.set_attribute("inviter.id", str(command.inviter_id))
+            span.set_attribute("inviter.id", str(command.user_id))
             span.set_attribute("invited_user.id", str(command.invited_user_id))
             logger = _logger.bind(
-                inviter_id=str(command.inviter_id),
+                inviter_id=str(command.user_id),
                 invited_user_id=str(command.invited_user_id),
             )
 
             logger.info("inviting_user_to_team")
 
-            inviter = await self.user_dao.find_by_id(command.inviter_id)
+            inviter = await self.user_dao.find_by_id(command.user_id)
             if inviter is None:
                 logger.error("inviter_not_found")
-                raise UserNotFoundException(command.inviter_id)
+                raise UserNotFoundException(command.user_id)
 
             if inviter.team_id is None:
                 logger.error("inviter_has_no_team")
-                raise UserNotInTeamException(command.inviter_id)
+                raise UserNotInTeamException(command.user_id)
 
             if not inviter.is_captain:
                 span.set_attribute("inviter.team_id", str(inviter.team_id))
                 logger.error("inviter_is_not_captain")
-                raise UserNotCaptainException(command.inviter_id)
+                raise UserNotCaptainException(command.user_id)
 
             invited_user = await self.user_dao.find_by_id(command.invited_user_id)
             if invited_user is None:
