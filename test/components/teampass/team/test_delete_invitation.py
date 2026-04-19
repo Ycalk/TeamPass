@@ -2,6 +2,8 @@ from uuid import uuid4
 
 import pytest
 from teampass.team.methods import (
+    AcceptInvitationCommand,
+    AcceptInvitationMethod,
     CreateTeamCommand,
     CreateTeamMethod,
     DeleteInvitationCommand,
@@ -10,6 +12,7 @@ from teampass.team.methods import (
     InviteToTeamMethod,
 )
 from teampass.team.methods.exceptions import (
+    InvitationAlreadyAcceptedException,
     InvitationDeleteForbiddenException,
     InvitationNotFoundException,
 )
@@ -55,11 +58,11 @@ class TestDeleteInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         command = DeleteInvitationCommand(
-            invitation_id=invitation.id, initiator_id=invited.id
+            invitation_id=invitation.id, user_id=invited.id
         )
         await delete_invitation_method(command)
 
@@ -103,11 +106,11 @@ class TestDeleteInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         command = DeleteInvitationCommand(
-            invitation_id=invitation.id, initiator_id=inviter.id
+            invitation_id=invitation.id, user_id=inviter.id
         )
         await delete_invitation_method(command)
 
@@ -126,7 +129,7 @@ class TestDeleteInvitationMethod:
             student_id=student.id,
         )
 
-        command = DeleteInvitationCommand(invitation_id=uuid4(), initiator_id=user.id)
+        command = DeleteInvitationCommand(invitation_id=uuid4(), user_id=user.id)
         with pytest.raises(InvitationNotFoundException):
             await delete_invitation_method(command)
 
@@ -166,12 +169,10 @@ class TestDeleteInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
-        command = DeleteInvitationCommand(
-            invitation_id=invitation.id, initiator_id=uuid4()
-        )
+        command = DeleteInvitationCommand(invitation_id=invitation.id, user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await delete_invitation_method(command)
 
@@ -211,7 +212,7 @@ class TestDeleteInvitationMethod:
         )
 
         invitation = await invite_to_team_method(
-            InviteToTeamCommand(inviter_id=inviter.id, invited_user_id=invited.id)
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
         )
 
         # Sneaky
@@ -225,7 +226,57 @@ class TestDeleteInvitationMethod:
         )
 
         command = DeleteInvitationCommand(
-            invitation_id=invitation.id, initiator_id=sneaky.id
+            invitation_id=invitation.id, user_id=sneaky.id
         )
         with pytest.raises(InvitationDeleteForbiddenException):
+            await delete_invitation_method(command)
+
+    async def test_delete_already_accepted(
+        self,
+        create_team_method: CreateTeamMethod,
+        invite_to_team_method: InviteToTeamMethod,
+        accept_invitation_method: AcceptInvitationMethod,
+        delete_invitation_method: DeleteInvitationMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+    ) -> None:
+        # Inviter
+        student_inviter = await student_dao.create(
+            student_id="tdi_acc_inviter",
+            first_name="A",
+            last_name="B",
+            patronymic=None,
+        )
+        inviter = await user_dao.create(
+            email="tdi_acc_inviter@example.com",
+            password_hash="hash",
+            student_id=student_inviter.id,
+        )
+        await create_team_method(CreateTeamCommand(name="Team A", user_id=inviter.id))
+
+        # Invited
+        student_invited = await student_dao.create(
+            student_id="tdi_acc_invited",
+            first_name="C",
+            last_name="D",
+            patronymic=None,
+        )
+        invited = await user_dao.create(
+            email="tdi_acc_invited@example.com",
+            password_hash="hash",
+            student_id=student_invited.id,
+        )
+
+        invitation = await invite_to_team_method(
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
+        )
+
+        await accept_invitation_method(
+            AcceptInvitationCommand(user_id=invited.id, invitation_id=invitation.id)
+        )
+
+        command = DeleteInvitationCommand(
+            invitation_id=invitation.id, user_id=inviter.id
+        )
+        with pytest.raises(InvitationAlreadyAcceptedException):
             await delete_invitation_method(command)

@@ -49,6 +49,14 @@ class InvitationAlreadyExistsException(DomainConflictException):
         )
 
 
+class InvitationAlreadyAcceptedException(DomainConflictException):
+    def __init__(self, invitation_id: UUID) -> None:
+        self.invitation_id: UUID = invitation_id
+        super().__init__(
+            f"Invitation with ID {invitation_id} has already been accepted"
+        )
+
+
 class UsersNotInSameTeamException(DomainForbiddenException):
     def __init__(self, user_id: UUID) -> None:
         self.user_id: UUID = user_id

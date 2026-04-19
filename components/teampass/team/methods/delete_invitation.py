@@ -10,6 +10,7 @@ from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import UserDAO
 
 from .exceptions import (
+    InvitationAlreadyAcceptedException,
     InvitationDeleteForbiddenException,
     InvitationNotFoundException,
 )
@@ -23,7 +24,7 @@ class DeleteInvitationPayload(BaseModel):
 
 
 class DeleteInvitationCommand(DeleteInvitationPayload):
-    initiator_id: UUID
+    user_id: UUID
 
 
 class DeleteInvitationMethod(DomainMethod[DeleteInvitationCommand, None]):
@@ -38,10 +39,10 @@ class DeleteInvitationMethod(DomainMethod[DeleteInvitationCommand, None]):
     @override
     async def __call__(self, command: DeleteInvitationCommand) -> None:
         with _tracer.start_as_current_span("team.delete_invitation") as span:
-            span.set_attribute("initiator.id", str(command.initiator_id))
+            span.set_attribute("initiator.id", str(command.user_id))
             span.set_attribute("invitation.id", str(command.invitation_id))
             logger = _logger.bind(
-                initiator_id=str(command.initiator_id),
+                initiator_id=str(command.user_id),
                 invitation_id=str(command.invitation_id),
             )
 
@@ -52,10 +53,10 @@ class DeleteInvitationMethod(DomainMethod[DeleteInvitationCommand, None]):
                 logger.error("invitation_not_found")
                 raise InvitationNotFoundException(command.invitation_id)
 
-            initiator = await self.user_dao.find_by_id(command.initiator_id)
+            initiator = await self.user_dao.find_by_id(command.user_id)
             if initiator is None:
                 logger.error("initiator_not_found")
-                raise UserNotFoundException(command.initiator_id)
+                raise UserNotFoundException(command.user_id)
 
             is_invited_user = initiator.id == invitation.user_id
             is_team_captain = (
@@ -67,8 +68,15 @@ class DeleteInvitationMethod(DomainMethod[DeleteInvitationCommand, None]):
                 span.set_attribute("invitation.user_id", str(invitation.user_id))
                 logger.error("initiator_not_authorized_to_delete_invitation")
                 raise InvitationDeleteForbiddenException(
-                    command.initiator_id, command.invitation_id
+                    command.user_id, command.invitation_id
                 )
+
+            if invitation.accepted_at is not None:
+                logger.error("invitation_already_accepted")
+                span.set_attribute(
+                    "invitation.accepted_at", str(invitation.accepted_at)
+                )
+                raise InvitationAlreadyAcceptedException(command.invitation_id)
 
             await self.invitation_dao.delete(invitation)
             await self.invitation_dao.commit()
