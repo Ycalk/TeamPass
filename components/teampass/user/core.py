@@ -9,7 +9,14 @@ from .methods import (
     RegisterUserMethod,
     UpdateStudentProfileMethod,
 )
-from .storage import StudentDAO, StudentProfileDAO, UserDAO
+from .storage import (
+    StudentDAO,
+    StudentDAOFactory,
+    StudentProfileDAO,
+    StudentProfileDAOFactory,
+    UserDAO,
+    UserDAOFactory,
+)
 
 
 class UserProvider(Provider):
@@ -30,5 +37,12 @@ class UserProvider(Provider):
         StudentDAO,
         StudentProfileDAO,
         UserDAO,
+        scope=Scope.REQUEST,
+    )
+
+    data_access_object_factories: CompositeDependencySource = provide_all(
+        StudentDAOFactory,
+        StudentProfileDAOFactory,
+        UserDAOFactory,
         scope=Scope.REQUEST,
     )

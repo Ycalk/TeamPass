@@ -5,14 +5,15 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, override
 from uuid import UUID
 
-from sqlalchemy import String, func
+from sqlalchemy import String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship, selectinload
+from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
+from teampass.user.storage import User
 
 if TYPE_CHECKING:
-    from teampass.user.storage import User
+    from .invitation import TeamInvitation
 
 
 class Team(BaseModel):
@@ -26,15 +27,18 @@ class Team(BaseModel):
     members: Mapped[list[User]] = relationship(
         back_populates="team", passive_deletes=True
     )
-    captain: Mapped[User | None] = relationship(
-        primaryjoin="and_(Team.id == User.team_id, User.is_captain == True)",
-        viewonly=True,
+    invitations: Mapped[list[TeamInvitation]] = relationship(
+        back_populates="team", cascade="all, delete-orphan", passive_deletes=True
     )
+
+    @property
+    def captain(self) -> User | None:
+        return next((m for m in self.members if m.is_captain), None)
 
 
 class TeamLoadEnum(StrEnum):
     MEMBERS = "members"
-    CAPTAIN = "captain"
+    INVITATIONS = "invitations"
 
 
 class TeamDAO(BaseDAO[Team, UUID, TeamLoadEnum]):
@@ -45,8 +49,8 @@ class TeamDAO(BaseDAO[Team, UUID, TeamLoadEnum]):
     @override
     def _load_mapper(self) -> dict[TeamLoadEnum, ORMOption | Sequence[ORMOption]]:
         return {
-            TeamLoadEnum.MEMBERS: selectinload(Team.members),
-            TeamLoadEnum.CAPTAIN: joinedload(Team.captain),
+            TeamLoadEnum.MEMBERS: selectinload(Team.members).joinedload(User.student),
+            TeamLoadEnum.INVITATIONS: selectinload(Team.invitations),
         }
 
     async def create(
@@ -56,6 +60,16 @@ class TeamDAO(BaseDAO[Team, UUID, TeamLoadEnum]):
         obj = Team(name=name)
         await self.save(obj)
         return obj
+
+    async def find_by_user_id(
+        self, user_id: UUID, includes: list[TeamLoadEnum] | None = None
+    ) -> Team | None:
+        stmt = select(Team).where(Team.members.any(User.id == user_id))
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class TeamDAOFactory(BaseDAOFactory[TeamDAO]):

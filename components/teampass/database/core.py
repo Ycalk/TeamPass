@@ -73,6 +73,10 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         )
         return obj
 
+    async def delete(self, obj: Model) -> None:
+        await self._session.delete(obj)
+        await self._session.flush()
+
     async def find_by_id(
         self, id: Id, includes: Sequence[LoadEnum] | None = None
     ) -> Model | None:
@@ -92,6 +96,7 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         stmt = select(self.model).offset(skip)
         if includes is not None:
             stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
         if limit is not None:
             stmt = stmt.limit(limit)
         result = (await self._session.execute(stmt)).scalars().all()
@@ -114,7 +119,7 @@ class BaseDAOFactory[DAO: BaseDAO[Any, Any, Any]]:
         self.dao_cls: Callable[[AsyncSession], DAO] = dao_cls
 
     @asynccontextmanager
-    async def __call__(self) -> AsyncGenerator[DAO, None]:
+    async def __call__(self) -> AsyncGenerator[DAO]:
         async with self._session_maker() as session:
             yield self.dao_cls(session)
 
@@ -143,7 +148,7 @@ class MultipleDAOFactory:
         self._session_maker: async_sessionmaker[AsyncSession] = session_maker
 
     @asynccontextmanager
-    async def __call__(self) -> AsyncGenerator[_DAOFactory, None]:
+    async def __call__(self) -> AsyncGenerator[_DAOFactory]:
         async with self._session_maker() as session:
             yield _DAOFactory(session)
 

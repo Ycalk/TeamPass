@@ -27,7 +27,7 @@ class Student(BaseModel):
     patronymic: Mapped[str | None] = mapped_column(String(255))
 
     user: Mapped[User | None] = relationship(
-        back_populates="student", passive_deletes=True
+        back_populates="student", cascade="all, delete-orphan", passive_deletes=True
     )
 
 

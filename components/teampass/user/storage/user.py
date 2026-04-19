@@ -7,14 +7,14 @@ from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, String, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
+from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship, selectinload
 from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
 from .student_profile import StudentProfile
 
 if TYPE_CHECKING:
-    from teampass.team.storage import Team
+    from teampass.team.storage import Team, TeamInvitation
 
     from .student import Student
 
@@ -47,7 +47,10 @@ class User(BaseModel):
     student: Mapped[Student] = relationship(back_populates="user")
     team: Mapped[Team | None] = relationship(back_populates="members")
     student_profile: Mapped[StudentProfile] = relationship(
-        back_populates="user", passive_deletes=True
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    invitations: Mapped[list[TeamInvitation]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
@@ -55,6 +58,7 @@ class UserLoadEnum(StrEnum):
     STUDENT = "student"
     TEAM = "team"
     STUDENT_PROFILE = "student_profile"
+    INVITATIONS = "invitations"
 
 
 class UserDAO(BaseDAO[User, UUID, UserLoadEnum]):
@@ -68,6 +72,7 @@ class UserDAO(BaseDAO[User, UUID, UserLoadEnum]):
             UserLoadEnum.STUDENT: joinedload(User.student),
             UserLoadEnum.TEAM: joinedload(User.team),
             UserLoadEnum.STUDENT_PROFILE: joinedload(User.student_profile),
+            UserLoadEnum.INVITATIONS: selectinload(User.invitations),
         }
 
     async def create(
