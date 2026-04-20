@@ -1,7 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+    plugins: [react()],
+    server: {
+        proxy: {
+            '/api': {
+                target: 'https://team-pass.ycalk.tech',
+                changeOrigin: true,
+                secure: true,
+            }
+        }
+    }
 })
