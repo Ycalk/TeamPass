@@ -21,8 +21,9 @@ class EntrypointSettings(BaseSettings):
     refresh_token_expire_days: int = 30
     jwt_encoding_algorithm: str = "HS256"
 
+    allow_origin_regex: str = r"^(http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?)$"
+    secret_key: str
+
     @property
     def methods_prefix(self) -> str:
         return f"{self.api_prefix}/v1"
-
-    secret_key: str

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from dishka import Provider, Scope, make_async_container, provide
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from teampass.database import DatabaseProvider
 from teampass.domain_core import DomainException
@@ -65,9 +66,15 @@ async def build_app() -> FastAPI:
         },
     )
 
-    FastAPIInstrumentor.instrument_app(app)
-
     setup_dishka(container=container, app=app)
+    FastAPIInstrumentor.instrument_app(app)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=entrypoint_settings.allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.add_exception_handler(CustomHTTPException, custom_http_exception_handler)
     app.add_exception_handler(DomainException, domain_exception_handler)

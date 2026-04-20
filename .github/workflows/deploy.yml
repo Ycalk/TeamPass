@@ -119,6 +119,8 @@ jobs:
           echo "SUPER_ADMIN_PASSWORD=${{ secrets.SUPER_ADMIN_PASSWORD }}" >> .env
           echo "SUPER_ADMIN_USERNAME=${{ secrets.SUPER_ADMIN_USERNAME }}" >> .env
 
+          echo "ALLOW_ORIGIN_REGEX=$(echo "${{ vars.ALLOW_ORIGIN_REGEX_BASE64 }}" | base64 -d)" >> .env
+
       - name: Transfer files to server
         uses: appleboy/scp-action@v1
         with:

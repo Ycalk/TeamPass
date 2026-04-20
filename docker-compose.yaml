@@ -85,6 +85,7 @@ services:
       - POSTGRES_PORT=5432
 
       - SECRET_KEY=${SECRET_KEY}
+      - ALLOW_ORIGIN_REGEX=${ALLOW_ORIGIN_REGEX}
 
       - TRACE_EXPORTER_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
