@@ -92,7 +92,7 @@ class TestLeaveTeamMethod:
         assert captain_refreshed.is_captain is False
 
         team_refreshed = await team_dao.find_by_id(team.id)
-        assert team_refreshed is None
+        assert team_refreshed is not None
 
     async def test_leave_user_not_found(
         self,

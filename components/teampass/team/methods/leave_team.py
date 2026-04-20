@@ -71,7 +71,6 @@ class LeaveTeamMethod(DomainMethod[LeaveTeamCommand, None]):
                 user.team_id = None
                 user.is_captain = False
                 await self.user_dao.save(user)
-                await self.team_dao.delete(team)
                 await self.team_dao.commit()
 
                 logger.info("team_dissolved", team_id=str(team_id))
