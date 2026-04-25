@@ -6,12 +6,14 @@ from opentelemetry import trace
 from pydantic import BaseModel
 from teampass.domain_core import DomainMethod
 from teampass.team.dto import Team
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamDAO, TeamLoadEnum
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import UserDAO
 
 from .exceptions import (
     CaptainCannotRemoveSelfException,
+    TeamTransfersDisabledException,
     UserNotCaptainException,
     UserNotInTeamException,
     UsersNotInSameTeamException,
@@ -34,9 +36,11 @@ class RemoveTeamMemberMethod(DomainMethod[RemoveTeamMemberCommand, Team]):
         self,
         team_dao: TeamDAO,
         user_dao: UserDAO,
+        policies: TeamPolicies,
     ) -> None:
         self.team_dao: TeamDAO = team_dao
         self.user_dao: UserDAO = user_dao
+        self.policies: TeamPolicies = policies
 
     @override
     async def __call__(self, command: RemoveTeamMemberCommand) -> Team:
@@ -77,6 +81,10 @@ class RemoveTeamMemberMethod(DomainMethod[RemoveTeamMemberCommand, Team]):
                 span.set_attribute("target_user.team_id", str(target_user.team_id))
                 logger.error("target_user_not_in_same_team")
                 raise UsersNotInSameTeamException(command.target_user_id)
+
+            if not self.policies.allow_team_transfers:
+                logger.error("transfers_disabled")
+                raise TeamTransfersDisabledException()
 
             team_id = initiator.team_id
             target_user.team_id = None

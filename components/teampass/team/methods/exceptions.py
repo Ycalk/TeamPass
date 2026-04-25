@@ -79,3 +79,13 @@ class CaptainCannotLeaveTeamException(DomainForbiddenException):
         super().__init__(
             f"Captain with ID {user_id} cannot leave while other members remain"
         )
+
+
+class TeamTransfersDisabledException(DomainForbiddenException):
+    def __init__(self) -> None:
+        super().__init__("Cannot make team transfer")
+
+
+class StudentsLimitReachedException(DomainForbiddenException):
+    def __init__(self, limit: int) -> None:
+        super().__init__(f"Limit of {limit} students has been reached")

@@ -33,9 +33,11 @@ from .methods import (
     UserNotInTeamException,
     UsersNotInSameTeamException,
 )
+from .policies import TeamPolicies
 
 __all__ = [
     "TeamProvider",
+    "TeamPolicies",
     "AcceptInvitationCommand",
     "AcceptInvitationMethod",
     "AcceptInvitationPayload",

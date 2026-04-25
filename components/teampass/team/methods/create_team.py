@@ -6,13 +6,12 @@ from opentelemetry import trace
 from pydantic import BaseModel
 from teampass.domain_core import DomainMethod
 from teampass.team.dto import Team
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamDAO, TeamLoadEnum
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import UserDAO, UserLoadEnum
 
-from .exceptions import (
-    UserAlreadyInTeamException,
-)
+from .exceptions import TeamTransfersDisabledException, UserAlreadyInTeamException
 
 _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
@@ -31,9 +30,11 @@ class CreateTeamMethod(DomainMethod[CreateTeamCommand, Team]):
         self,
         team_dao: TeamDAO,
         user_dao: UserDAO,
+        policies: TeamPolicies,
     ) -> None:
         self.team_dao: TeamDAO = team_dao
         self.user_dao: UserDAO = user_dao
+        self.policies: TeamPolicies = policies
 
     @override
     async def __call__(self, command: CreateTeamCommand) -> Team:
@@ -58,6 +59,10 @@ class CreateTeamMethod(DomainMethod[CreateTeamCommand, Team]):
                 span.set_attribute("team.existing_team.id", str(user.team_id))
                 logger.error("user_already_in_team")
                 raise UserAlreadyInTeamException(command.user_id)
+
+            if not self.policies.allow_team_transfers:
+                logger.error("transfers_disabled")
+                raise TeamTransfersDisabledException()
 
             team = await self.team_dao.create(command.name)
             user.team_id = team.id

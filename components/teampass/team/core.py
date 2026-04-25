@@ -1,5 +1,6 @@
-from dishka import Provider, Scope, provide_all
+from dishka import Provider, Scope, provide, provide_all
 from dishka.dependency_source import CompositeDependencySource
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .methods import (
     AcceptInvitationMethod,
@@ -11,6 +12,7 @@ from .methods import (
     RenameTeamMethod,
     TransferCaptaincyMethod,
 )
+from .policies import TeamPolicies
 from .storage import (
     TeamDAO,
     TeamDAOFactory,
@@ -43,3 +45,7 @@ class TeamProvider(Provider):
         TeamInvitationDAOFactory,
         scope=Scope.REQUEST,
     )
+
+    @provide(scope=Scope.REQUEST)
+    async def policies(self, session: AsyncSession) -> TeamPolicies:
+        return await TeamPolicies(session).sync()

@@ -14,6 +14,7 @@ from teampass.team.methods import (
     RenameTeamMethod,
     TransferCaptaincyMethod,
 )
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamDAO, TeamInvitationDAO
 from teampass.user import UserProvider
 from teampass.user.storage import StudentDAO, UserDAO
@@ -98,3 +99,8 @@ async def transfer_captaincy_method(
 @pytest_asyncio.fixture
 async def rename_team_method(request_container: AsyncContainer) -> RenameTeamMethod:
     return await request_container.get(RenameTeamMethod)
+
+
+@pytest_asyncio.fixture
+async def policies(request_container: AsyncContainer) -> TeamPolicies:
+    return await request_container.get(TeamPolicies)

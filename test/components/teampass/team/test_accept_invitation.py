@@ -11,8 +11,11 @@ from teampass.team.methods import (
 )
 from teampass.team.methods.exceptions import (
     InvitationNotFoundException,
+    StudentsLimitReachedException,
+    TeamTransfersDisabledException,
     UserAlreadyInTeamException,
 )
+from teampass.team.policies import TeamPolicies
 from teampass.user.storage import StudentDAO, UserDAO
 
 
@@ -192,4 +195,100 @@ class TestAcceptInvitationMethod:
             invitation_id=invitation.id, user_id=invited.id
         )
         with pytest.raises(UserAlreadyInTeamException):
+            await accept_invitation_method(command)
+
+    async def test_accept_invitation_students_limit_reached(
+        self,
+        create_team_method: CreateTeamMethod,
+        invite_to_team_method: InviteToTeamMethod,
+        accept_invitation_method: AcceptInvitationMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+        policies: TeamPolicies,
+    ) -> None:
+        policies.max_users = 1
+        await policies.save()
+        await policies.commit()
+
+        student_inviter = await student_dao.create(
+            student_id="tai_limit_inviter",
+            first_name="A",
+            last_name="B",
+            patronymic=None,
+        )
+        inviter = await user_dao.create(
+            email="tai_limit_inviter@example.com",
+            password_hash="hash",
+            student_id=student_inviter.id,
+        )
+        await create_team_method(CreateTeamCommand(name="Team A", user_id=inviter.id))
+
+        student_invited = await student_dao.create(
+            student_id="tai_limit_invited",
+            first_name="C",
+            last_name="D",
+            patronymic=None,
+        )
+        invited = await user_dao.create(
+            email="tai_limit_invited@example.com",
+            password_hash="hash",
+            student_id=student_invited.id,
+        )
+
+        invitation = await invite_to_team_method(
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
+        )
+
+        command = AcceptInvitationCommand(
+            invitation_id=invitation.id, user_id=invited.id
+        )
+        with pytest.raises(StudentsLimitReachedException):
+            await accept_invitation_method(command)
+
+    async def test_accept_invitation_transfers_disabled(
+        self,
+        create_team_method: CreateTeamMethod,
+        invite_to_team_method: InviteToTeamMethod,
+        accept_invitation_method: AcceptInvitationMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+        policies: TeamPolicies,
+    ) -> None:
+        student_inviter = await student_dao.create(
+            student_id="tai_trans_dis_inviter",
+            first_name="A",
+            last_name="B",
+            patronymic=None,
+        )
+        inviter = await user_dao.create(
+            email="tai_trans_dis_inviter@example.com",
+            password_hash="hash",
+            student_id=student_inviter.id,
+        )
+        await create_team_method(CreateTeamCommand(name="Team A", user_id=inviter.id))
+
+        student_invited = await student_dao.create(
+            student_id="tai_trans_dis_invited",
+            first_name="C",
+            last_name="D",
+            patronymic=None,
+        )
+        invited = await user_dao.create(
+            email="tai_trans_dis_invited@example.com",
+            password_hash="hash",
+            student_id=student_invited.id,
+        )
+
+        invitation = await invite_to_team_method(
+            InviteToTeamCommand(user_id=inviter.id, invited_user_id=invited.id)
+        )
+
+        policies.allow_team_transfers = False
+        policies.max_users = 6
+        await policies.save()
+        await policies.commit()
+        command = AcceptInvitationCommand(
+            invitation_id=invitation.id, user_id=invited.id
+        )
+        with pytest.raises(TeamTransfersDisabledException):
             await accept_invitation_method(command)

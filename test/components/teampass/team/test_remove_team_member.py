@@ -9,10 +9,12 @@ from teampass.team.methods import (
 )
 from teampass.team.methods.exceptions import (
     CaptainCannotRemoveSelfException,
+    TeamTransfersDisabledException,
     UserNotCaptainException,
     UserNotInTeamException,
     UsersNotInSameTeamException,
 )
+from teampass.team.policies import TeamPolicies
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
@@ -200,4 +202,43 @@ class TestRemoveTeamMemberMethod:
 
         command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=other.id)
         with pytest.raises(UsersNotInSameTeamException):
+            await remove_team_member_method(command)
+
+    async def test_remove_team_transfers_disabled(
+        self,
+        create_team_method: CreateTeamMethod,
+        remove_team_member_method: RemoveTeamMemberMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+        policies: TeamPolicies,
+    ) -> None:
+        student_cap = await student_dao.create(
+            student_id="trm_trans_dis_c", first_name="A", last_name="B", patronymic=None
+        )
+        captain = await user_dao.create(
+            email="trm_trans_dis_c@example.com",
+            password_hash="hash",
+            student_id=student_cap.id,
+        )
+        team = await create_team_method(
+            CreateTeamCommand(name="Team", user_id=captain.id)
+        )
+
+        student_mem = await student_dao.create(
+            student_id="trm_trans_dis_m", first_name="C", last_name="D", patronymic=None
+        )
+        member = await user_dao.create(
+            email="trm_trans_dis_m@example.com",
+            password_hash="hash",
+            student_id=student_mem.id,
+        )
+        member.team_id = team.id
+        await user_dao.save(member)
+        await user_dao.commit()
+
+        policies.allow_team_transfers = False
+        await policies.save()
+        await policies.commit()
+        command = RemoveTeamMemberCommand(user_id=captain.id, target_user_id=member.id)
+        with pytest.raises(TeamTransfersDisabledException):
             await remove_team_member_method(command)

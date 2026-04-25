@@ -5,12 +5,14 @@ import structlog
 from opentelemetry import trace
 from pydantic import BaseModel
 from teampass.domain_core import DomainMethod
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamDAO, TeamLoadEnum
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import UserDAO
 
 from .exceptions import (
     CaptainCannotLeaveTeamException,
+    TeamTransfersDisabledException,
     UserNotInTeamException,
 )
 
@@ -27,9 +29,11 @@ class LeaveTeamMethod(DomainMethod[LeaveTeamCommand, None]):
         self,
         team_dao: TeamDAO,
         user_dao: UserDAO,
+        policies: TeamPolicies,
     ) -> None:
         self.team_dao: TeamDAO = team_dao
         self.user_dao: UserDAO = user_dao
+        self.policies: TeamPolicies = policies
 
     @override
     async def __call__(self, command: LeaveTeamCommand) -> None:
@@ -50,6 +54,10 @@ class LeaveTeamMethod(DomainMethod[LeaveTeamCommand, None]):
 
             team_id = user.team_id
             span.set_attribute("team.id", str(team_id))
+
+            if not self.policies.allow_team_transfers:
+                logger.error("transfers_disabled")
+                raise TeamTransfersDisabledException()
 
             if user.is_captain:
                 team = await self.team_dao.find_by_id(

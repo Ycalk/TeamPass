@@ -5,7 +5,11 @@ from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
 )
-from teampass.team.methods.exceptions import UserAlreadyInTeamException
+from teampass.team.methods.exceptions import (
+    TeamTransfersDisabledException,
+    UserAlreadyInTeamException,
+)
+from teampass.team.policies import TeamPolicies
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
@@ -83,3 +87,30 @@ class TestCreateTeamMethod:
             await create_team_method(command2)
 
         assert exc_info.value.user_id == user.id
+
+    async def test_create_team_transfers_disabled(
+        self,
+        create_team_method: CreateTeamMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+        policies: TeamPolicies,
+    ) -> None:
+        policies.allow_team_transfers = False
+        await policies.save()
+        await policies.commit()
+
+        student = await student_dao.create(
+            student_id="tct_no_transfer",
+            first_name="Test",
+            last_name="Testov",
+            patronymic=None,
+        )
+        user = await user_dao.create(
+            email="tct_notransfer@example.com",
+            password_hash="hash",
+            student_id=student.id,
+        )
+
+        command = CreateTeamCommand(name="No Transfer Team", user_id=user.id)
+        with pytest.raises(TeamTransfersDisabledException):
+            await create_team_method(command)
