@@ -13,6 +13,7 @@ packages = [
     {include = "teampass/database",from = "../../components"},
     {include = "teampass/team",from = "../../components"},
     {include = "teampass/admin",from = "../../components"},
+    {include = "teampass/live_option",from = "../../components"},
 ]
 
 [tool.poetry.dependencies]
