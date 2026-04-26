@@ -45,7 +45,7 @@ export function Profile() {
     }
 
   return (
-    <main className="pt-28 pb-16 px-10 max-w-7xl mx-auto">
+    <main className="pb-16 max-w-7xl mx-auto">
 
             {/* HEADER */}
             <section className="mb-10">
@@ -57,15 +57,16 @@ export function Profile() {
                     </div>
 
                     <div className="flex-1 text-center md:text-left">
-                        <h2 className="text-4xl font-extrabold text-indigo-900 font-headline">
+                        <h2 className="text-4xl font-extrabold text-indigo-900 tracking-tight font-headline">
                             {profile.user.student.last_name}{" "}
                             {profile.user.student.first_name}{" "}
                             {profile.user.student.patronymic}
                         </h2>
 
-                        <div className="mt-3 flex justify-center md:justify-start">
-                            <div className="flex items-center gap-2 text-indigo-400 font-semibold bg-white/50 px-3 py-1 rounded-full">
-                                <span className="text-xs uppercase">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4 mt-3">
+                            <div className="flex items-center gap-2 text-indigo-400 font-semibold bg-white/50 px-3 py-1 rounded-full w-fit mx-auto md:mx-0">
+                                <span className="material-symbols-outlined text-sm" data-icon="badge">badge</span>
+                                <span className="text-xs uppercase tracking-wider font-label">
                                     Студенческий №: {profile.user.student.student_id}
                                 </span>
                             </div>
@@ -79,42 +80,52 @@ export function Profile() {
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
 
                 {/* Чем могу помочь */}
-                <div className="bg-surface-container-low p-8 rounded-3xl">
-                    <h3 className="text-xl font-extrabold text-indigo-900 mb-6 uppercase">
-                        Чем я могу помочь
+                <div className="bg-surface-container-low p-8 rounded-3xl border border-transparent transition-all hover:border-teal-500/20">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 bg-secondary-container/30 text-secondary rounded-xl">
+                      <span className="pt-1.5 material-symbols-outlined" data-icon="bolt">bolt</span>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-indigo-900 font-headline uppercase tracking-tight">
+                      Чем я могу помочь
                     </h3>
-
-                    <textarea
-                        className="w-full bg-white/60 rounded-2xl p-4 text-sm min-h-[120px]"
-                        value={profile.strengths_text || ''}
-                        onChange={(e) =>
-                            handleChange('strengths_text', e.target.value)
-                        }
-                        placeholder="Опишите свои навыки..."
-                    />
+                  </div>
+                  
+                  <textarea
+                    className="w-full bg-white/60 border-none rounded-2xl p-4 text-sm text-on-surface-variant font-label focus:ring-2 focus:ring-teal-500 transition-shadow min-h-[120px] resize-none"
+                    value={profile.strengths_text || ''}
+                    onChange={(e) =>
+                        handleChange('strengths_text', e.target.value)
+                    }
+                    placeholder="Опишите свои навыки..."
+                  />
                 </div>
 
                 {/* Нужна помощь */}
-                <div className="bg-surface-container-low p-8 rounded-3xl">
-                    <h3 className="text-xl font-extrabold text-indigo-900 mb-6 uppercase">
-                        В чем мне нужна помощь
-                    </h3>
+                <div className="bg-surface-container-low p-8 rounded-3xl border border-transparent transition-all hover:border-amber-500/20">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 bg-tertiary-fixed text-tertiary-container rounded-xl">
+                      <span className="pt-1.5 material-symbols-outlined" data-icon="handshake">handshake</span>
+                    </div>
+                  <h3 className="text-xl font-extrabold text-indigo-900 font-headline uppercase tracking-tight">
+                    В чем мне нужна помощь
+                  </h3>
+                </div>
 
-                    <textarea
-                        className="w-full bg-white/60 rounded-2xl p-4 text-sm min-h-[120px]"
-                        value={profile.weaknesses_text || ''}
-                        onChange={(e) =>
-                            handleChange('weaknesses_text', e.target.value)
-                        }
-                        placeholder="Что вам трудно дается?"
-                    />
+                  <textarea
+                    className="w-full bg-white/60 border-none rounded-2xl p-4 text-sm text-on-surface-variant font-label focus:ring-2 focus:ring-amber-500 transition-shadow min-h-[120px] resize-none"
+                    value={profile.weaknesses_text || ''}
+                    onChange={(e) =>
+                      handleChange('weaknesses_text', e.target.value)
+                    }
+                    placeholder="Что вам трудно дается?"
+                  />
                 </div>
 
             </section>
 
             {/* CONTACTS */}
             <section className="bg-surface-container-low p-8 rounded-3xl mb-10">
-                <h3 className="text-xl font-extrabold text-indigo-900 mb-8 uppercase">
+                <h3 className="text-xl font-extrabold text-indigo-900 font-headline mb-8 uppercase tracking-tight">
                     Контактная информация
                 </h3>
 
@@ -122,58 +133,73 @@ export function Profile() {
 
                     {/* TG */}
                     <div>
-                        <label className="text-xs text-indigo-400 mb-2 block">
+                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
                             TG
                         </label>
-                        <input
-                            className="w-full bg-white px-4 py-3 rounded-xl"
-                            value={profile.telegram_username || ''}
-                            onChange={(e) =>
-                                handleChange('telegram_username', e.target.value)
-                            }
-                        />
+                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
+                          <span className="material-symbols-outlined text-indigo-400" data-icon="alternate_email">alternate_email</span>
+                          <input
+                              className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
+                              value={profile.telegram_username || ''}
+                              onChange={(e) =>
+                                  handleChange('telegram_username', e.target.value)
+                              }
+                          />
+                        </div>
                     </div>
 
                     {/* VK */}
                     <div>
-                        <label className="text-xs text-indigo-400 mb-2 block">
+                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
                             VK
                         </label>
-                        <input
-                            className="w-full bg-white px-4 py-3 rounded-xl"
+                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
+                          <span className="material-symbols-outlined text-indigo-400" data-icon="public">public</span>
+                          <input
+                            className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
                             value={profile.vk_profile_link || ''}
                             onChange={(e) =>
-                                handleChange('vk_profile_link', e.target.value)
+                              handleChange('vk_profile_link', e.target.value)
                             }
-                        />
+                          />
+                        </div>
                     </div>
 
                     {/* PHONE */}
                     <div>
-                        <label className="text-xs text-indigo-400 mb-2 block">
-                            Телефон
+                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
+                            телефон
                         </label>
-                        <input
-                            className="w-full bg-white px-4 py-3 rounded-xl"
+                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
+                          <span className="material-symbols-outlined text-indigo-400" data-icon="call">call</span>
+                          <input
+                            className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
                             value={profile.phone_number || ''}
                             onChange={(e) =>
-                                handleChange('phone_number', e.target.value)
+                              handleChange('phone_number', e.target.value)
                             }
-                        />
+                          />
+                        </div>
                     </div>
 
                 </div>
             </section>
 
-            {/* SAVE BUTTON */}
-            <div className="flex justify-end">
+            {/* FOOTER ACTION */}
+            <footer className="flex items-center justify-end gap-4 border-t border-indigo-100 pt-10">
+              <button
+                /* onClick={} */
+                className="px-8 py-4 text-indigo-400 font-bold hover:text-indigo-900 transition-colors uppercase tracking-widest text-xs"
+              >
+                Отменить
+              </button>
                 <button
                     onClick={handleSave}
-                    className="px-10 py-4 rounded-2xl font-bold bg-secondary text-white"
+                    className="px-10 py-4 rounded-2xl font-black shadow-xl shadow-teal-900/10 active:scale-95 transition-all uppercase tracking-widest text-xs bg-secondary text-white"
                 >
                     Сохранить изменения
                 </button>
-            </div>
+            </footer>
 
         </main>
   );
