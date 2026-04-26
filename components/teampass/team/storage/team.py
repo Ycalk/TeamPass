@@ -13,6 +13,8 @@ from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 from teampass.user.storage import User
 
 if TYPE_CHECKING:
+    from teampass.transaction.storage import CycleSnapshot, PointTransaction
+
     from .invitation import TeamInvitation
 
 
@@ -28,6 +30,12 @@ class Team(BaseModel):
         back_populates="team", passive_deletes=True
     )
     invitations: Mapped[list[TeamInvitation]] = relationship(
+        back_populates="team", cascade="all, delete-orphan", passive_deletes=True
+    )
+    point_transactions: Mapped[list[PointTransaction]] = relationship(
+        back_populates="team", cascade="all, delete-orphan", passive_deletes=True
+    )
+    cycle_snapshots: Mapped[list[CycleSnapshot]] = relationship(
         back_populates="team", cascade="all, delete-orphan", passive_deletes=True
     )
 

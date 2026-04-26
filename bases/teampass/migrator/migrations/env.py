@@ -36,6 +36,7 @@ def register_models() -> list[type[BaseModel]]:
         _LiveOptionStorage,  # pyright: ignore[reportPrivateUsage]
     )
     from teampass.team.storage import Team, TeamInvitation
+    from teampass.transaction.storage import CycleSnapshot, GameCycle, PointTransaction
     from teampass.user.storage import Student, StudentProfile, User
 
     return [
@@ -46,6 +47,9 @@ def register_models() -> list[type[BaseModel]]:
         StudentProfile,
         User,
         _LiveOptionStorage,
+        CycleSnapshot,
+        GameCycle,
+        PointTransaction,
     ]
 
 

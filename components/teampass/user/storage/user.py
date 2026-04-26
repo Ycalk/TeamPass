@@ -15,6 +15,7 @@ from .student_profile import StudentProfile
 
 if TYPE_CHECKING:
     from teampass.team.storage import Team, TeamInvitation
+    from teampass.transaction.storage import CycleSnapshot, PointTransaction
 
     from .student import Student
 
@@ -50,6 +51,12 @@ class User(BaseModel):
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
     invitations: Mapped[list[TeamInvitation]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    point_transactions: Mapped[list[PointTransaction]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    cycle_snapshots: Mapped[list[CycleSnapshot]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
 
