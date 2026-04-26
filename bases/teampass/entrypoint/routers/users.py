@@ -174,7 +174,7 @@ async def get_my_profile(
     logger.info("processing_get_my_profile_request")
 
     user = await student_dao.find_by_id(
-        user_id, includes=[UserLoadEnum.STUDENT_PROFILE]
+        user_id, includes=[UserLoadEnum.STUDENT_PROFILE, UserLoadEnum.STUDENT]
     )
     if user is None:
         logger.error("user_not_found")
