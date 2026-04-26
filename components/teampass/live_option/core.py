@@ -12,8 +12,8 @@ from teampass.database import BaseModel
 SupportedValueType = str | int | bool | float
 
 
-class _ListOptionStorage(BaseModel):
-    __tablename__: str = "list_option"
+class _LiveOptionStorage(BaseModel):
+    __tablename__: str = "live_option"
     key: Mapped[str] = mapped_column(String(255), primary_key=True)
     value: Mapped[dict[str, SupportedValueType]] = mapped_column(JSONB)
 
@@ -31,18 +31,18 @@ class OptionDef[T: SupportedValueType]:
     def __get__(self, instance: None, owner: type) -> Self: ...
 
     @overload
-    def __get__(self, instance: ListOptionBase, owner: type) -> T: ...
+    def __get__(self, instance: LiveOptionBase, owner: type) -> T: ...
 
-    def __get__(self, instance: ListOptionBase | None, owner: type) -> T | Self:
+    def __get__(self, instance: LiveOptionBase | None, owner: type) -> T | Self:
         if instance is None:
             return self
         return instance.values[self.name]  # type: ignore  # pyright: ignore[reportReturnType]
 
-    def __set__(self, instance: ListOptionBase, value: T) -> None:
+    def __set__(self, instance: LiveOptionBase, value: T) -> None:
         instance.values[self.name] = value
 
 
-class ListOptionBase:
+class LiveOptionBase:
     name: ClassVar[str]
     __options__: ClassVar[tuple[OptionDef[Any], ...]]
 
@@ -84,7 +84,7 @@ class ListOptionBase:
     async def save(self) -> Self:
         storage = await self._get_storage()
         if storage is None:
-            storage = _ListOptionStorage(key=self.name, value=self.values)
+            storage = _LiveOptionStorage(key=self.name, value=self.values)
             self._session.add(storage)
         else:
             storage.value = self.values
@@ -95,7 +95,7 @@ class ListOptionBase:
     async def commit(self) -> None:
         await self._session.commit()
 
-    async def _get_storage(self) -> _ListOptionStorage | None:
-        stmt = select(_ListOptionStorage).where(_ListOptionStorage.key == self.name)
+    async def _get_storage(self) -> _LiveOptionStorage | None:
+        stmt = select(_LiveOptionStorage).where(_LiveOptionStorage.key == self.name)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()

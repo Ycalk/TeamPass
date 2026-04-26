@@ -1,9 +1,9 @@
 from typing import ClassVar
 
-from teampass.live_option import ListOptionBase, OptionDef
+from teampass.live_option import LiveOptionBase, OptionDef
 
 
-class TeamPolicies(ListOptionBase):
+class TeamPolicies(LiveOptionBase):
     name: ClassVar[str] = "team_policies"
 
     max_users: OptionDef[int] = OptionDef(

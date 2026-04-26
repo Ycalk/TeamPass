@@ -1,3 +1,3 @@
-from .core import ListOptionBase, OptionDef
+from .core import LiveOptionBase, OptionDef
 
-__all__ = ["ListOptionBase", "OptionDef"]
+__all__ = ["LiveOptionBase", "OptionDef"]

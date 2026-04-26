@@ -33,7 +33,7 @@ target_metadata = BaseModel.metadata
 def register_models() -> list[type[BaseModel]]:
     from teampass.admin.storage import Admin
     from teampass.live_option.core import (
-        _ListOptionStorage,  # pyright: ignore[reportPrivateUsage]
+        _LiveOptionStorage,  # pyright: ignore[reportPrivateUsage]
     )
     from teampass.team.storage import Team, TeamInvitation
     from teampass.user.storage import Student, StudentProfile, User
@@ -45,7 +45,7 @@ def register_models() -> list[type[BaseModel]]:
         Student,
         StudentProfile,
         User,
-        _ListOptionStorage,
+        _LiveOptionStorage,
     ]
 
 
