@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { profileApi } from '../api/profile';
 import type { Profile } from '../api/profile';
-
+import { toast } from "sonner";
 
 export function Profile() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [originalProfile, setOriginalProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const load = async () => {
             try {
                 const data = await profileApi.getMyProfile();
                 setProfile(data);
+                setOriginalProfile(data);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -26,8 +29,13 @@ export function Profile() {
         setProfile(prev => prev ? { ...prev, [field]: value } : prev);
     };
 
+    const handleReset = () => {
+        setProfile(originalProfile);
+    };
+
     const handleSave = async () => {
         if (!profile) return;
+        setIsSaving(true);
 
         const payload = {
             telegram_username: profile.telegram_username,
@@ -37,170 +45,187 @@ export function Profile() {
             weaknesses_text: profile.weaknesses_text
         };
 
-        await profileApi.updateProfile(payload);
+        try {
+            await profileApi.updateProfile(payload);
+            setOriginalProfile(profile);
+            toast.success("Профиль успешно обновлен!");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
+    const isEdited = originalProfile && profile && (
+        profile.telegram_username !== originalProfile.telegram_username ||
+        profile.vk_profile_link !== originalProfile.vk_profile_link ||
+        profile.phone_number !== originalProfile.phone_number ||
+        profile.strengths_text !== originalProfile.strengths_text ||
+        profile.weaknesses_text !== originalProfile.weaknesses_text
+    );
+
     if (loading || !profile) {
-        return <div className="p-10">Загрузка...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-[50vh] w-full">
+                <span className="material-symbols-outlined animate-spin text-4xl text-primary">
+                    progress_activity
+                </span>
+            </div>
+        );
     }
 
-  return (
-    <main className="pb-16 max-w-7xl mx-auto">
+    return (
+        <div className="w-full space-y-8 font-body">
 
-            {/* HEADER */}
-            <section className="mb-10">
-                <div className="flex flex-col md:flex-row items-center gap-8 bg-surface-container-low p-8 rounded-3xl">
-
-                    {/* Заглушка аватарки */}
-                    <div className="w-32 h-32 rounded-2xl bg-gray-200 flex items-center justify-center text-4xl">
-                        👤
+            {/* HEADER CARD */}
+            <section className="bg-surface-container-lowest overflow-hidden rounded-[2rem] shadow-2xl shadow-primary/5 border border-outline-variant/15 p-8 md:p-10">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-32 h-32 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-5xl shadow-inner border border-primary/20">
+                        🧑‍🎓
                     </div>
-
                     <div className="flex-1 text-center md:text-left">
-                        <h2 className="text-4xl font-extrabold text-indigo-900 tracking-tight font-headline">
-                            {profile.user.student.last_name}{" "}
-                            {profile.user.student.first_name}{" "}
-                            {profile.user.student.patronymic}
+                        <h2 className="text-3xl md:text-4xl font-black text-primary tracking-tight font-headline mb-4">
+                            {profile.user.student.last_name} {profile.user.student.first_name} {profile.user.student.patronymic}
                         </h2>
-
-                        <div className="flex flex-col md:flex-row md:items-center gap-4 mt-3">
-                            <div className="flex items-center gap-2 text-indigo-400 font-semibold bg-white/50 px-3 py-1 rounded-full w-fit mx-auto md:mx-0">
-                                <span className="material-symbols-outlined text-sm" data-icon="badge">badge</span>
-                                <span className="text-xs uppercase tracking-wider font-label">
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                            <div className="flex items-center gap-2 text-on-surface-variant bg-surface-container-low px-4 py-2 rounded-xl border border-outline-variant/20">
+                                <span className="material-symbols-outlined text-sm text-primary" data-icon="badge">badge</span>
+                                <span className="text-xs uppercase tracking-wider font-bold">
                                     Студенческий №: {profile.user.student.student_id}
                                 </span>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </section>
 
-            {/* SKILLS */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-
+            {/* SKILLS CARDS */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Чем могу помочь */}
-                <div className="bg-surface-container-low p-8 rounded-3xl border border-transparent transition-all hover:border-teal-500/20">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-secondary-container/30 text-secondary rounded-xl">
-                      <span className="pt-1.5 material-symbols-outlined" data-icon="bolt">bolt</span>
+                <div className="bg-surface-container-lowest rounded-[2rem] shadow-xl shadow-primary/5 border border-outline-variant/15 p-8 flex flex-col">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-secondary-container/30 text-secondary rounded-xl">
+                            <span className="material-symbols-outlined block" data-icon="bolt">bolt</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-primary font-headline uppercase tracking-tight">
+                            Чем я могу помочь
+                        </h3>
                     </div>
-                    <h3 className="text-xl font-extrabold text-indigo-900 font-headline uppercase tracking-tight">
-                      Чем я могу помочь
-                    </h3>
-                  </div>
-                  
-                  <textarea
-                    className="w-full bg-white/60 border-none rounded-2xl p-4 text-sm text-on-surface-variant font-label focus:ring-2 focus:ring-teal-500 transition-shadow min-h-[120px] resize-none"
-                    value={profile.strengths_text || ''}
-                    onChange={(e) =>
-                        handleChange('strengths_text', e.target.value)
-                    }
-                    placeholder="Опишите свои навыки..."
-                  />
+                    <div className="relative group flex-1">
+                        <textarea
+                            className="w-full h-full min-h-[140px] p-5 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-teal-500/30 focus:bg-surface-container-lowest transition-all duration-200 text-sm text-on-surface font-medium resize-none"
+                            value={profile.strengths_text || ''}
+                            onChange={(e) => handleChange('strengths_text', e.target.value)}
+                            placeholder="Опишите темы и предметы, в которых вы хорошо разбираетесь..."
+                        />
+                    </div>
                 </div>
 
                 {/* Нужна помощь */}
-                <div className="bg-surface-container-low p-8 rounded-3xl border border-transparent transition-all hover:border-amber-500/20">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-tertiary-fixed text-tertiary-container rounded-xl">
-                      <span className="pt-1.5 material-symbols-outlined" data-icon="handshake">handshake</span>
+                <div className="bg-surface-container-lowest rounded-[2rem] shadow-xl shadow-primary/5 border border-outline-variant/15 p-8 flex flex-col">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-tertiary-fixed text-tertiary-container rounded-xl">
+                            <span className="material-symbols-outlined block" data-icon="handshake">handshake</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-primary font-headline uppercase tracking-tight">
+                            В чем мне нужна помощь
+                        </h3>
                     </div>
-                  <h3 className="text-xl font-extrabold text-indigo-900 font-headline uppercase tracking-tight">
-                    В чем мне нужна помощь
-                  </h3>
+                    <div className="relative group flex-1">
+                        <textarea
+                            className="w-full h-full min-h-[140px] p-5 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-amber-500/30 focus:bg-surface-container-lowest transition-all duration-200 text-sm text-on-surface font-medium resize-none"
+                            value={profile.weaknesses_text || ''}
+                            onChange={(e) => handleChange('weaknesses_text', e.target.value)}
+                            placeholder="Укажите, с чем у вас возникают трудности..."
+                        />
+                    </div>
                 </div>
-
-                  <textarea
-                    className="w-full bg-white/60 border-none rounded-2xl p-4 text-sm text-on-surface-variant font-label focus:ring-2 focus:ring-amber-500 transition-shadow min-h-[120px] resize-none"
-                    value={profile.weaknesses_text || ''}
-                    onChange={(e) =>
-                      handleChange('weaknesses_text', e.target.value)
-                    }
-                    placeholder="Что вам трудно дается?"
-                  />
-                </div>
-
             </section>
 
-            {/* CONTACTS */}
-            <section className="bg-surface-container-low p-8 rounded-3xl mb-10">
-                <h3 className="text-xl font-extrabold text-indigo-900 font-headline mb-8 uppercase tracking-tight">
+            {/* CONTACTS CARD */}
+            <section className="bg-surface-container-lowest rounded-[2rem] shadow-xl shadow-primary/5 border border-outline-variant/15 p-8">
+                <h3 className="text-lg font-bold text-primary font-headline mb-8 uppercase tracking-tight flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary/70" data-icon="contact_page">contact_page</span>
                     Контактная информация
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                     {/* TG */}
-                    <div>
-                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
-                            TG
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-1">
+                            Telegram
                         </label>
-                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
-                          <span className="material-symbols-outlined text-indigo-400" data-icon="alternate_email">alternate_email</span>
-                          <input
-                              className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
-                              value={profile.telegram_username || ''}
-                              onChange={(e) =>
-                                  handleChange('telegram_username', e.target.value)
-                              }
-                          />
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
+                                alternate_email
+                            </span>
+                            <input
+                                className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200 text-on-surface font-medium"
+                                value={profile.telegram_username || ''}
+                                onChange={(e) => handleChange('telegram_username', e.target.value)}
+                                placeholder="@username"
+                            />
                         </div>
                     </div>
 
                     {/* VK */}
-                    <div>
-                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
-                            VK
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-1">
+                            ВКонтакте
                         </label>
-                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
-                          <span className="material-symbols-outlined text-indigo-400" data-icon="public">public</span>
-                          <input
-                            className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
-                            value={profile.vk_profile_link || ''}
-                            onChange={(e) =>
-                              handleChange('vk_profile_link', e.target.value)
-                            }
-                          />
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
+                                public
+                            </span>
+                            <input
+                                className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200 text-on-surface font-medium"
+                                value={profile.vk_profile_link || ''}
+                                onChange={(e) => handleChange('vk_profile_link', e.target.value)}
+                                placeholder="vk.com/id..."
+                            />
                         </div>
                     </div>
 
                     {/* PHONE */}
-                    <div>
-                        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 ml-1">
-                            телефон
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-1">
+                            Телефон
                         </label>
-                        <div className="flex items-center gap-3 bg-white px-5 py-4 rounded-2xl shadow-sm group-focus-within:ring-2 ring-indigo-500 transition-all">
-                          <span className="material-symbols-outlined text-indigo-400" data-icon="call">call</span>
-                          <input
-                            className="bg-transparent border-none focus:ring-0 p-0 text-indigo-900 font-bold flex-1"
-                            value={profile.phone_number || ''}
-                            onChange={(e) =>
-                              handleChange('phone_number', e.target.value)
-                            }
-                          />
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
+                                call
+                            </span>
+                            <input
+                                className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200 text-on-surface font-medium"
+                                value={profile.phone_number || ''}
+                                onChange={(e) => handleChange('phone_number', e.target.value)}
+                                placeholder="+7..."
+                            />
                         </div>
                     </div>
-
                 </div>
             </section>
 
-            {/* FOOTER ACTION */}
-            <footer className="flex items-center justify-end gap-4 border-t border-indigo-100 pt-10">
-              <button
-                /* onClick={} */
-                className="px-8 py-4 text-indigo-400 font-bold hover:text-indigo-900 transition-colors uppercase tracking-widest text-xs"
-              >
-                Отменить
-              </button>
+            {/* FOOTER ACTIONS */}
+            <footer className="flex items-center justify-end gap-4 border-t border-surface-container pt-8 mt-8">
+                {isEdited && (
+                    <button
+                        onClick={handleReset}
+                        disabled={isSaving}
+                        className="px-6 py-3 text-on-surface-variant font-bold hover:text-error hover:bg-error/10 rounded-xl transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+                    >
+                        Сбросить
+                    </button>
+                )}
                 <button
                     onClick={handleSave}
-                    className="px-10 py-4 rounded-2xl font-black shadow-xl shadow-teal-900/10 active:scale-95 transition-all uppercase tracking-widest text-xs bg-secondary text-white"
+                    disabled={!isEdited || isSaving}
+                    className={`px-8 py-3 rounded-xl font-headline font-bold text-sm transition-all duration-200 uppercase tracking-widest ${isEdited
+                        ? "bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-lg shadow-primary/20 hover:scale-[0.98] active:scale-95"
+                        : "bg-surface-container-high text-on-surface-variant opacity-50 cursor-not-allowed"
+                        }`}
                 >
-                    Сохранить изменения
+                    {isSaving ? "Сохранение..." : "Сохранить изменения"}
                 </button>
             </footer>
-
-        </main>
-  );
+        </div>
+    );
 }

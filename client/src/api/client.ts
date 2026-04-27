@@ -52,7 +52,7 @@ const processQueue = (error: any, token: string | null = null) => {
 
 apiClient.interceptors.response.use(
     (response) => response,
-    async (error: AxiosError<ApiErrorResponse>) => {
+    async (error: AxiosError<ApiErrorResponse | any>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
@@ -94,6 +94,24 @@ apiClient.interceptors.response.use(
         const customConfig = originalRequest as any;
         if (!customConfig?.skipGlobalErrorNotification && error.response) {
             const status = error.response.status;
+            if (status === 422) {
+                const detail = error.response.data?.detail;
+
+                if (Array.isArray(detail)) {
+                    const validationMessages = detail.map((err: any) => {
+                        const fieldName = err.loc && err.loc.length > 0
+                            ? err.loc[err.loc.length - 1]
+                            : 'Поле';
+
+                        return `• ${fieldName}: ${err.msg}`;
+                    });
+                    toast.error('Ошибка валидации данных', {
+                        description: validationMessages.join('\n')
+                    });
+                } else {
+                    toast.error('Ошибка валидации: переданы неверные данные');
+                }
+            }
             if ([400, 401, 403, 404, 409, 500].includes(status)) {
                 const errName = error.response.data?.error || 'Ошибка';
                 const errMessage = error.response.data?.message || 'Произошла непредвиденная ошибка';

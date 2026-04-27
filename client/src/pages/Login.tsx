@@ -26,22 +26,24 @@ export function Login() {
     };
 
     return (
-        <div className="bg-background font-body text-on-surface min-h-screen flex flex-col">
-            {/* TopAppBar - теперь точно такой же как в Register */}
-            <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_15px_-3px_rgba(26,35,126,0.08)]">
-                <div className="flex justify-between items-center w-full px-8 py-4 max-w-screen-2xl mx-auto">
-                    <div className="text-2xl font-black text-indigo-900 tracking-tighter font-headline">
-                        TeamPass
-                    </div>
+        <div className="bg-background font-body text-on-surface min-h-screen flex flex-col relative">
+
+            {/* Логотип как в MainLayout (абсолютное позиционирование) */}
+            <div className="absolute top-8 left-8 z-50 flex items-center">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center mr-3 shadow-md shadow-primary/20">
+                    <span className="material-symbols-outlined text-on-primary">school</span>
                 </div>
-            </header>
+                <span className="text-2xl font-black text-primary tracking-tighter font-headline">
+                    TeamPass
+                </span>
+            </div>
 
             <main className="flex-1 flex items-center justify-center py-16 px-4 relative overflow-hidden">
                 {/* Abstract Background Decorative Elements */}
                 <div className="absolute top-[-10%] left-[-5%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]"></div>
                 <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-secondary-fixed/10 rounded-full blur-[120px]"></div>
 
-                {/* Login Card - убрана полоса, скругления 2rem, отступы как в Register */}
+                {/* Login Card */}
                 <div className="w-full max-w-xl bg-surface-container-lowest overflow-hidden rounded-[2rem] shadow-2xl shadow-primary/10 relative z-10 border border-outline-variant/15 p-8 md:p-12">
 
                     <div className="mb-10 text-center">
@@ -60,10 +62,10 @@ export function Login() {
                                 className="text-sm font-semibold text-on-surface-variant px-1"
                                 htmlFor="email"
                             >
-                                Email
+                                Email <span className="text-error">*</span>
                             </label>
                             <div className="relative group">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-secondary transition-colors">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
                                     mail
                                 </span>
                                 <input
@@ -76,8 +78,9 @@ export function Login() {
                                     })}
                                     className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                     id="email"
-                                    placeholder="student@academy.edu"
+                                    placeholder="student@example.com"
                                     type="email"
+                                    autoComplete="username"
                                 />
                             </div>
                             {errors.email && (
@@ -92,17 +95,17 @@ export function Login() {
                                     className="text-sm font-semibold text-on-surface-variant"
                                     htmlFor="password"
                                 >
-                                    Пароль
+                                    Пароль <span className="text-error">*</span>
                                 </label>
                                 <a
-                                    className="text-xs font-semibold text-primary hover:text-secondary-fixed-dim transition-colors"
+                                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
                                     href="#"
                                 >
                                     Забыли пароль?
                                 </a>
                             </div>
                             <div className="relative group">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-secondary transition-colors">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
                                     lock
                                 </span>
                                 <input
@@ -111,6 +114,7 @@ export function Login() {
                                     id="password"
                                     placeholder="••••••••"
                                     type={showPassword ? "text" : "password"}
+                                    autoComplete="current-password"
                                 />
                                 <button
                                     className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors"
@@ -129,7 +133,7 @@ export function Login() {
                             )}
                         </div>
 
-                        {/* CTA Button - стили точно как в Register */}
+                        {/* CTA Button */}
                         <button
                             type="submit"
                             disabled={isSubmitting}
@@ -139,13 +143,13 @@ export function Login() {
                         </button>
                     </form>
 
-                    {/* Подвал со ссылкой - стили точно как в Register */}
+                    {/* Подвал со ссылкой */}
                     <div className="mt-8 pt-8 border-t border-surface-container text-center">
                         <p className="text-on-surface-variant text-sm font-medium">
                             Нет аккаунта?
                             <Link
                                 to="/register"
-                                className="text-primary font-bold hover:text-secondary-fixed-dim transition-colors ml-1"
+                                className="text-primary font-bold hover:text-primary/80 transition-colors ml-1"
                             >
                                 Зарегистрироваться
                             </Link>

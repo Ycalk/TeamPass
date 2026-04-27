@@ -36,15 +36,17 @@ export function Register() {
     };
 
     return (
-        <div className="bg-background font-body text-on-surface min-h-screen flex flex-col">
-            {/* TopAppBar */}
-            <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-50 shadow-[0_1px_15px_-3px_rgba(26,35,126,0.08)]">
-                <div className="flex justify-between items-center w-full px-8 py-4 max-w-screen-2xl mx-auto">
-                    <div className="text-2xl font-black text-indigo-900 tracking-tighter font-headline">
-                        TeamPass
-                    </div>
+        <div className="bg-background font-body text-on-surface min-h-screen flex flex-col relative">
+
+            {/* Логотип (абсолютное позиционирование) */}
+            <div className="absolute top-8 left-8 z-50 flex items-center">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center mr-3 shadow-md shadow-primary/20">
+                    <span className="material-symbols-outlined text-on-primary">school</span>
                 </div>
-            </header>
+                <span className="text-2xl font-black text-primary tracking-tighter font-headline">
+                    TeamPass
+                </span>
+            </div>
 
             <main className="flex-1 flex items-center justify-center py-16 px-4 relative overflow-hidden">
                 {/* Abstract Background Decorative Elements */}
@@ -66,13 +68,14 @@ export function Register() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                    Имя
+                                    Имя <span className="text-error">*</span>
                                 </label>
                                 <input
                                     {...register("first_name", { required: "Введите имя" })}
                                     className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                     placeholder="Иван"
                                     type="text"
+                                    autoComplete="given-name"
                                 />
                                 {errors.first_name && (
                                     <span className="text-xs text-error px-1">{errors.first_name.message}</span>
@@ -80,13 +83,14 @@ export function Register() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                    Фамилия
+                                    Фамилия <span className="text-error">*</span>
                                 </label>
                                 <input
                                     {...register("last_name", { required: "Введите фамилию" })}
                                     className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                     placeholder="Иванов"
                                     type="text"
+                                    autoComplete="family-name"
                                 />
                                 {errors.last_name && (
                                     <span className="text-xs text-error px-1">{errors.last_name.message}</span>
@@ -96,38 +100,34 @@ export function Register() {
 
                         {/* Middle Name */}
                         <div className="space-y-1.5">
-                            <div className="flex justify-between px-1">
-                                <label className="text-sm font-semibold text-on-surface-variant">
-                                    Отчество
-                                </label>
-                                <span className="text-[10px] uppercase tracking-wider text-outline">
-                                    необязательно
-                                </span>
-                            </div>
+                            <label className="text-sm font-semibold text-on-surface-variant px-1 block">
+                                Отчество
+                            </label>
                             <input
                                 {...register("patronymic")}
                                 className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                 placeholder="Иванович"
                                 type="text"
+                                autoComplete="additional-name"
                             />
                         </div>
 
                         {/* Student ID */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                Номер студенческого билета
+                                Номер студенческого билета <span className="text-error">*</span>
                             </label>
-                            <div className="relative">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl">
+                            <div className="relative group">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
                                     badge
                                 </span>
                                 <input
                                     {...register("student_id", {
-                                        required: "Введите номер",
+                                        required: "Введите номер студенческого билета",
                                         pattern: { value: /^\d+$/, message: "Должны быть только цифры" }
                                     })}
                                     className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
-                                    placeholder="125306000"
+                                    placeholder="01234567"
                                     type="text"
                                 />
                             </div>
@@ -139,10 +139,10 @@ export function Register() {
                         {/* Email */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                Email
+                                Email <span className="text-error">*</span>
                             </label>
-                            <div className="relative">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl">
+                            <div className="relative group">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl group-focus-within:text-primary transition-colors">
                                     mail
                                 </span>
                                 <input
@@ -151,8 +151,9 @@ export function Register() {
                                         pattern: { value: /^\S+@\S+$/i, message: "Некорректный email" }
                                     })}
                                     className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
-                                    placeholder="example@university.edu"
+                                    placeholder="student@example.com"
                                     type="email"
+                                    autoComplete="email"
                                 />
                             </div>
                             {errors.email && (
@@ -164,7 +165,7 @@ export function Register() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                    Пароль
+                                    Пароль <span className="text-error">*</span>
                                 </label>
                                 <input
                                     {...register("plain_password", {
@@ -174,6 +175,7 @@ export function Register() {
                                     className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                     placeholder="••••••••"
                                     type="password"
+                                    autoComplete="new-password"
                                 />
                                 {errors.plain_password && (
                                     <span className="text-xs text-error px-1">{errors.plain_password.message}</span>
@@ -181,7 +183,7 @@ export function Register() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-on-surface-variant px-1">
-                                    Повтор пароля
+                                    Повтор пароля <span className="text-error">*</span>
                                 </label>
                                 <input
                                     {...register("password_confirm", {
@@ -191,6 +193,7 @@ export function Register() {
                                     className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest transition-all duration-200"
                                     placeholder="••••••••"
                                     type="password"
+                                    autoComplete="new-password"
                                 />
                                 {errors.password_confirm && (
                                     <span className="text-xs text-error px-1">{errors.password_confirm.message}</span>
@@ -212,7 +215,7 @@ export function Register() {
                             Уже есть аккаунт?
                             <Link
                                 to="/login"
-                                className="text-primary font-bold hover:text-secondary-fixed-dim transition-colors ml-1"
+                                className="text-primary font-bold hover:text-primary/80 transition-colors ml-1"
                             >
                                 Войти
                             </Link>
