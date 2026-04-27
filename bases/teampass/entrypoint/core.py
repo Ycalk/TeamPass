@@ -10,6 +10,7 @@ from teampass.database import DatabaseProvider
 from teampass.domain_core import DomainException
 from teampass.logging import LoggingSettings, LoggingSettingsProvider, setup_logging
 from teampass.team import TeamProvider
+from teampass.transaction import TransactionProvider
 from teampass.user import UserProvider
 from uvicorn import Config, Server
 
@@ -43,6 +44,7 @@ async def build_app() -> FastAPI:
         LoggingSettingsProvider(),
         UserProvider(),
         TeamProvider(),
+        TransactionProvider(),
     )
 
     entrypoint_settings = await container.get(EntrypointSettings)
