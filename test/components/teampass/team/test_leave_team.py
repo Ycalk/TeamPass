@@ -9,8 +9,10 @@ from teampass.team.methods import (
 )
 from teampass.team.methods.exceptions import (
     CaptainCannotLeaveTeamException,
+    TeamTransfersDisabledException,
     UserNotInTeamException,
 )
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamDAO
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
@@ -156,4 +158,30 @@ class TestLeaveTeamMethod:
 
         command = LeaveTeamCommand(user_id=captain.id)
         with pytest.raises(CaptainCannotLeaveTeamException):
+            await leave_team_method(command)
+
+    async def test_leave_team_transfers_disabled(
+        self,
+        create_team_method: CreateTeamMethod,
+        leave_team_method: LeaveTeamMethod,
+        student_dao: StudentDAO,
+        user_dao: UserDAO,
+        policies: TeamPolicies,
+    ) -> None:
+        student_cap = await student_dao.create(
+            student_id="tlt_trans_dis", first_name="A", last_name="B", patronymic=None
+        )
+        captain = await user_dao.create(
+            email="tlt_trans_dis@example.com",
+            password_hash="hash",
+            student_id=student_cap.id,
+        )
+        await create_team_method(CreateTeamCommand(name="Team", user_id=captain.id))
+
+        policies.allow_team_transfers = False
+        await policies.save()
+        await policies.commit()
+
+        command = LeaveTeamCommand(user_id=captain.id)
+        with pytest.raises(TeamTransfersDisabledException):
             await leave_team_method(command)

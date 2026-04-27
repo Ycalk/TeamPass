@@ -32,10 +32,25 @@ target_metadata = BaseModel.metadata
 
 def register_models() -> list[type[BaseModel]]:
     from teampass.admin.storage import Admin
+    from teampass.live_option.core import (
+        _LiveOptionStorage,  # pyright: ignore[reportPrivateUsage]
+    )
     from teampass.team.storage import Team, TeamInvitation
+    from teampass.transaction.storage import CycleSnapshot, GameCycle, PointTransaction
     from teampass.user.storage import Student, StudentProfile, User
 
-    return [Admin, Team, TeamInvitation, Student, StudentProfile, User]
+    return [
+        Admin,
+        Team,
+        TeamInvitation,
+        Student,
+        StudentProfile,
+        User,
+        _LiveOptionStorage,
+        CycleSnapshot,
+        GameCycle,
+        PointTransaction,
+    ]
 
 
 def run_migrations_offline() -> None:

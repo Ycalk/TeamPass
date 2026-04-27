@@ -7,11 +7,14 @@ from opentelemetry import trace
 from pydantic import BaseModel
 from teampass.domain_core import DomainMethod
 from teampass.team.dto import TeamInvitation
+from teampass.team.policies import TeamPolicies
 from teampass.team.storage import TeamInvitationDAO, TeamInvitationLoadEnum
 from teampass.user.storage import UserDAO
 
 from .exceptions import (
     InvitationNotFoundException,
+    StudentsLimitReachedException,
+    TeamTransfersDisabledException,
     UserAlreadyInTeamException,
 )
 
@@ -32,9 +35,11 @@ class AcceptInvitationMethod(DomainMethod[AcceptInvitationCommand, TeamInvitatio
         self,
         invitation_dao: TeamInvitationDAO,
         user_dao: UserDAO,
+        policies: TeamPolicies,
     ) -> None:
         self.invitation_dao: TeamInvitationDAO = invitation_dao
         self.user_dao: UserDAO = user_dao
+        self.policies: TeamPolicies = policies
 
     @override
     async def __call__(self, command: AcceptInvitationCommand) -> TeamInvitation:
@@ -48,7 +53,10 @@ class AcceptInvitationMethod(DomainMethod[AcceptInvitationCommand, TeamInvitatio
 
             logger.info("accepting_invitation")
 
-            invitation = await self.invitation_dao.find_by_id(command.invitation_id)
+            invitation = await self.invitation_dao.find_by_id(
+                command.invitation_id,
+                includes=[TeamInvitationLoadEnum.TEAM_WITH_MEMBERS],
+            )
             if invitation is None:
                 logger.error("invitation_not_found")
                 raise InvitationNotFoundException(command.invitation_id)
@@ -62,6 +70,14 @@ class AcceptInvitationMethod(DomainMethod[AcceptInvitationCommand, TeamInvitatio
                 span.set_attribute("user.team_id", str(user.team_id))
                 logger.error("user_already_in_team")
                 raise UserAlreadyInTeamException(command.user_id)
+
+            if len(invitation.team.members) >= self.policies.max_users:
+                logger.error("students_limit_reached", limit=self.policies.max_users)
+                raise StudentsLimitReachedException(self.policies.max_users)
+
+            if not self.policies.allow_team_transfers:
+                logger.error("transfers_disabled")
+                raise TeamTransfersDisabledException()
 
             invitation.accepted_at = datetime.now(timezone.utc)
             user.team_id = invitation.team_id
