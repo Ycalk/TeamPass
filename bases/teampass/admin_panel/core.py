@@ -13,6 +13,7 @@ from teampass.admin import AdminProvider
 from teampass.database import DatabaseProvider
 from teampass.logging import LoggingSettings, LoggingSettingsProvider, setup_logging
 from teampass.team import TeamProvider
+from teampass.transaction import TransactionProvider
 from teampass.user import UserProvider
 from uvicorn import Config, Server
 
@@ -48,6 +49,7 @@ async def build_app() -> Starlette:
         LoggingSettingsProvider(),
         UserProvider(),
         TeamProvider(),
+        TransactionProvider(),
     )
 
     admin_panel_settings = await container.get(AdminPanelSettings)
