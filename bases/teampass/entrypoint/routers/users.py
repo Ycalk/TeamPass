@@ -21,7 +21,7 @@ from teampass.user import (
     UpdateStudentProfilePayload,
     User,
 )
-from teampass.user.storage import UserDAO, UserLoadEnum
+from teampass.user.storage import StudentDAO, StudentLoadEnum, UserDAO, UserLoadEnum
 
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
@@ -41,6 +41,29 @@ router = APIRouter(
     },
     route_class=DishkaRoute,
 )
+
+
+@router.get("/search", status_code=status.HTTP_200_OK)
+async def search_users(
+    query: str,
+    student_dao: FromDishka[StudentDAO],
+    limit: int = 20,
+    user_id: UUID = Depends(get_current_user_id),
+) -> list[User]:
+    span = trace.get_current_span()
+    span.set_attribute("user.id", str(user_id))
+    logger = _logger.bind(user_id=str(user_id))
+    logger.info("processing_search_users_request")
+    students = await student_dao.search_students(
+        query, limit=limit, includes=[StudentLoadEnum.USER]
+    )
+    users = [
+        User.from_persistent(student.user)
+        for student in students
+        if student.user is not None
+    ]
+    logger.info("search_users_request_processed")
+    return users
 
 
 @router.get("/me", status_code=status.HTTP_200_OK)
