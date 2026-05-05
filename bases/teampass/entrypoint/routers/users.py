@@ -188,7 +188,7 @@ async def update_profile(
 
 @router.get("/me/profile", status_code=status.HTTP_200_OK)
 async def get_my_profile(
-    student_dao: FromDishka[UserDAO],
+    user_dao: FromDishka[UserDAO],
     user_id: UUID = Depends(get_current_user_id),
 ) -> StudentProfile:
     span = trace.get_current_span()
@@ -196,7 +196,7 @@ async def get_my_profile(
     logger = _logger.bind(user_id=str(user_id))
     logger.info("processing_get_my_profile_request")
 
-    user = await student_dao.find_by_id(
+    user = await user_dao.find_by_id(
         user_id, includes=[UserLoadEnum.STUDENT_PROFILE, UserLoadEnum.STUDENT]
     )
     if user is None:
@@ -212,7 +212,7 @@ async def get_my_profile(
 
 @router.get("/{user_id}/profile", status_code=status.HTTP_200_OK)
 async def get_user_profile(
-    student_dao: FromDishka[UserDAO],
+    user_dao: FromDishka[UserDAO],
     user_id: UUID,
     request_user_id: UUID = Depends(get_current_user_id),
 ) -> StudentProfile:
@@ -222,8 +222,8 @@ async def get_user_profile(
     logger = _logger.bind(user_id=str(user_id), request_user_id=str(request_user_id))
     logger.info("processing_get_user_profile_request")
 
-    user = await student_dao.find_by_id(
-        user_id, includes=[UserLoadEnum.STUDENT_PROFILE]
+    user = await user_dao.find_by_id(
+        user_id, includes=[UserLoadEnum.STUDENT_PROFILE, UserLoadEnum.STUDENT]
     )
     if user is None:
         logger.error("user_not_found")

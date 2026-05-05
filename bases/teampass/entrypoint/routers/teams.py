@@ -107,6 +107,23 @@ async def get_my_team(
     return Team.from_persistent(team)
 
 
+@router.get("/invitations", status_code=status.HTTP_200_OK)
+async def get_user_invitations(
+    invitation_dao: FromDishka[TeamInvitationDAO],
+    user_id: UUID = Depends(get_current_user_id),
+) -> list[TeamInvitation]:
+    span = trace.get_current_span()
+    span.set_attribute("user.id", str(user_id))
+    logger = _logger.bind(user_id=str(user_id))
+    logger.info("processing_get_user_invitations_request")
+
+    invitations = await invitation_dao.find_by_user_id(
+        user_id, includes=[TeamInvitationLoadEnum.TEAM_WITH_MEMBERS]
+    )
+    logger.info("get_user_invitations_request_processed")
+    return [TeamInvitation.from_persistent(invitation) for invitation in invitations]
+
+
 @router.get("/{team_id}", status_code=status.HTTP_200_OK)
 async def get_team(
     team_dao: FromDishka[TeamDAO],
@@ -333,21 +350,30 @@ async def accept_invitation(
     return res
 
 
-@router.get("/invitations", status_code=status.HTTP_200_OK)
-async def get_user_invitations(
-    invitation_dao: FromDishka[TeamInvitationDAO],
+@router.delete(
+    "/me/members/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "model": ErrorResponse,
+            "description": (
+                "Пользователь не состоит в команде "
+                + "/ капитан не может выйти из команды с участниками"
+            ),
+        },
+    },
+)
+async def leave_team(
+    method: FromDishka[LeaveTeamMethod],
     user_id: UUID = Depends(get_current_user_id),
-) -> list[TeamInvitation]:
+):
     span = trace.get_current_span()
     span.set_attribute("user.id", str(user_id))
     logger = _logger.bind(user_id=str(user_id))
-    logger.info("processing_get_user_invitations_request")
+    logger.info("processing_leave_team_request")
 
-    invitations = await invitation_dao.find_by_user_id(
-        user_id, includes=[TeamInvitationLoadEnum.TEAM_WITH_MEMBERS]
-    )
-    logger.info("get_user_invitations_request_processed")
-    return [TeamInvitation.from_persistent(invitation) for invitation in invitations]
+    await method(LeaveTeamCommand(user_id=user_id))
+    logger.info("leave_team_request_processed")
 
 
 @router.delete(
@@ -380,29 +406,3 @@ async def remove_team_member(
     )
     logger.info("remove_team_member_request_processed")
     return res
-
-
-@router.delete(
-    "/me/members/me",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={
-        status.HTTP_403_FORBIDDEN: {
-            "model": ErrorResponse,
-            "description": (
-                "Пользователь не состоит в команде "
-                + "/ капитан не может выйти из команды с участниками"
-            ),
-        },
-    },
-)
-async def leave_team(
-    method: FromDishka[LeaveTeamMethod],
-    user_id: UUID = Depends(get_current_user_id),
-):
-    span = trace.get_current_span()
-    span.set_attribute("user.id", str(user_id))
-    logger = _logger.bind(user_id=str(user_id))
-    logger.info("processing_leave_team_request")
-
-    await method(LeaveTeamCommand(user_id=user_id))
-    logger.info("leave_team_request_processed")
