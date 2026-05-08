@@ -71,6 +71,14 @@ class TeamDAO(BaseDAO[Team, UUID, TeamLoadEnum]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_id_with_members(self, team_id: str) -> Team | None:
+        """Получить команду с участниками"""
+        stmt = (
+            select(Team).where(Team.id == team_id).options(selectinload(Team.members))
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
 
 class TeamDAOFactory(BaseDAOFactory[TeamDAO]):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:
