@@ -15,6 +15,7 @@ packages = [
     {include = "teampass/admin",from = "components"},
     {include = "teampass/live_option",from = "components"},
     {include = "teampass/transaction",from = "components"},
+    {include = "teampass/media_storage",from = "components"},
 ]
 
 [tool.poetry.dependencies]
@@ -39,6 +40,9 @@ pytest-asyncio = "^1.3.0"
 pyjwt = "^2.12.1"
 sqladmin = {extras = ["full"], version = "^0.24.0"}
 opentelemetry-instrumentation-starlette = "^0.62b0"
+aioboto3 = "^15.5.0"
+types-aioboto3 = {extras = ["essential"], version = "^15.5.0"}
+filetype = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.15.7"

@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, override
 from uuid import UUID
 
-from sqlalchemy import Index, String, and_, func, select
+from sqlalchemy import Index, String, and_, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 from sqlalchemy.orm.interfaces import ORMOption
@@ -21,17 +21,11 @@ class Student(BaseModel):
     __table_args__: tuple[Any, ...] = (
         Index(
             "ix_student_search_vector_trgm",
-            func.concat_ws(
-                " ",
-                "student_id",
-                "first_name",
-                "last_name",
-                func.coalesce("patronymic", ""),
+            text(
+                "(student_id || ' ' || first_name || ' ' || "
+                + "last_name || ' ' || coalesce(patronymic, '')) gin_trgm_ops"
             ),
             postgresql_using="gin",
-            postgresql_ops={
-                "concat_ws": "gin_trgm_ops",
-            },
         ),
     )
 
@@ -98,12 +92,14 @@ class StudentDAO(BaseDAO[Student, UUID, StudentLoadEnum]):
         if not query or not query.strip():
             return []
 
-        search_vector = func.concat_ws(
-            " ",
-            Student.student_id,
-            Student.first_name,
-            Student.last_name,
-            func.coalesce(Student.patronymic, ""),
+        search_vector = (
+            Student.student_id
+            + " "
+            + Student.first_name
+            + " "
+            + Student.last_name
+            + " "
+            + func.coalesce(Student.patronymic, "")
         )
 
         words = query.strip().split()
