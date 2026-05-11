@@ -3,7 +3,7 @@ import { MainLayout } from "./layouts/MainLayout";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Dashboard } from "./pages/Dashboard";
-import { Team } from "./pages/Team";
+import { Team } from "./pages/TeamPage/Team";
 import { Profile } from "./pages/Profile";
 import { Knowledge } from "./pages/Knowledge";
 import { Challenges } from "./pages/Challenges";
