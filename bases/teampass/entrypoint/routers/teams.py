@@ -118,7 +118,11 @@ async def get_user_invitations(
     logger.info("processing_get_user_invitations_request")
 
     invitations = await invitation_dao.find_by_user_id(
-        user_id, includes=[TeamInvitationLoadEnum.TEAM_WITH_MEMBERS]
+        user_id,
+        includes=[
+            TeamInvitationLoadEnum.TEAM_WITH_MEMBERS,
+            TeamInvitationLoadEnum.USER,
+        ],
     )
     logger.info("get_user_invitations_request_processed")
     return [TeamInvitation.from_persistent(invitation) for invitation in invitations]
@@ -287,7 +291,11 @@ async def get_team_invitations(
         )
 
     invitations = await team_invitation_dao.find_by_team_id(
-        team.id, includes=[TeamInvitationLoadEnum.TEAM_WITH_MEMBERS]
+        team.id,
+        includes=[
+            TeamInvitationLoadEnum.TEAM_WITH_MEMBERS,
+            TeamInvitationLoadEnum.USER,
+        ],
     )
     logger.info("get_team_invitations_request_processed")
     return [TeamInvitation.from_persistent(invitation) for invitation in invitations]
