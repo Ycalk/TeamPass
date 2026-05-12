@@ -53,25 +53,42 @@ export const TeamView = ({
             </div>
 
           <div className="space-y-4">
-            {team.members
+            {[...team.members]
                 .filter(
-                (
+                    (
                     member: any,
                     index: number,
                     arr: any[]
-                ) =>
+                    ) =>
                     arr.findIndex(
-                    (m) => m.id === member.id
+                        (m) => m.id === member.id
                     ) === index
                 )
+                .sort((a, b) => {
+                    if (
+                    String(a.id) ===
+                    String(team.captain.id)
+                    ) {
+                    return -1;
+                    }
+
+                    if (
+                    String(b.id) ===
+                    String(team.captain.id)
+                    ) {
+                    return 1;
+                    }
+
+                    return 0;
+                })
                 .map((member: any) => (
-                <MemberCard
+                    <MemberCard
                     key={member.id}
                     member={member}
                     isCaptain={isCaptain}
                     captainId={team.captain.id}
                     onReload={onReload}
-                />
+                    />
                 ))}
             </div>
         </div>
