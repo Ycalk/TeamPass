@@ -16,6 +16,8 @@ packages = [
     {include = "teampass/live_option",from = "components"},
     {include = "teampass/transaction",from = "components"},
     {include = "teampass/media_storage",from = "components"},
+    {include = "teampass/report",from = "components"},
+    {include = "teampass/market",from = "components"},
 ]
 
 [tool.poetry.dependencies]
@@ -43,6 +45,7 @@ opentelemetry-instrumentation-starlette = "^0.62b0"
 aioboto3 = "^15.5.0"
 types-aioboto3 = {extras = ["essential"], version = "^15.5.0"}
 filetype = "^1.2.0"
+nh3 = "^0.3.5"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.15.7"
