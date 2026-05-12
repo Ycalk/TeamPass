@@ -30,11 +30,12 @@ jobs:
       - name: Start infrastructure
         run: docker compose up -d postgres seaweedfs
       
-      - name: Start pg-proxy
-        run: docker run -d --name pg-proxy \
-          -p 5432:5432 \
-          --network teampass \
-          alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432
+      - name: Start PG Proxy
+        run: |
+          docker run -d --name pg-proxy \
+            -p 5432:5432 \
+            --network teampass \
+            alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432
 
       - name: Set up Python
         uses: actions/setup-python@v6
