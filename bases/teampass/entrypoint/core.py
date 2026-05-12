@@ -9,6 +9,9 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from teampass.database import DatabaseProvider
 from teampass.domain_core import DomainException
 from teampass.logging import LoggingSettings, LoggingSettingsProvider, setup_logging
+from teampass.market import MarketProvider
+from teampass.media_storage import MediaStorageProvider
+from teampass.report import ReportProvider
 from teampass.team import TeamProvider
 from teampass.transaction import TransactionProvider
 from teampass.user import UserProvider
@@ -45,6 +48,9 @@ async def build_app() -> FastAPI:
         UserProvider(),
         TeamProvider(),
         TransactionProvider(),
+        MarketProvider(),
+        MediaStorageProvider(),
+        ReportProvider(),
     )
 
     entrypoint_settings = await container.get(EntrypointSettings)

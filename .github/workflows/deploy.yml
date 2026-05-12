@@ -9,20 +9,6 @@ jobs:
   test_project:
     runs-on: ubuntu-latest
     environment: staging
-    services:
-      postgres:
-        image: postgres:17.9-bookworm
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: teampass
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
@@ -32,9 +18,23 @@ jobs:
       SECRET_KEY: secret
       SUPER_ADMIN_PASSWORD: password
       SUPER_ADMIN_USERNAME: admin
+      S3_ACCESS_KEY: s3access
+      S3_SECRET_KEY: s3secret
+      S3_BUCKET_NAME: media
+      S3_REGION_NAME: us-east-1
+      S3_ENDPOINT_URL: http://localhost:9444
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+      
+      - name: Start infrastructure
+        run: docker compose up -d postgres seaweedfs
+      
+      - name: Start pg-proxy
+        run: docker run -d --name pg-proxy \
+          -p 5432:5432 \
+          --network teampass \
+          alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -52,6 +52,14 @@ jobs:
           poetry self add poetry-polylith-plugin
           poetry self add poetry-plugin-export
           poetry install
+      
+      - name: Create media bucket in SeaweedFS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.S3_REGION_NAME }}
+        run: |
+          aws --endpoint-url http://localhost:8333 s3 mb s3://media
 
       - name: Run tests with pytest
         run: |
@@ -120,7 +128,11 @@ jobs:
           echo "SUPER_ADMIN_USERNAME=${{ secrets.SUPER_ADMIN_USERNAME }}" >> .env
 
           echo "ALLOW_ORIGIN_REGEX=$(echo "${{ vars.ALLOW_ORIGIN_REGEX_BASE64 }}" | base64 -d)" >> .env
-
+          
+          echo "S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}" >> .env
+          echo "S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}" >> .env
+          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
+          
       - name: Transfer files to server
         uses: appleboy/scp-action@v1
         with:

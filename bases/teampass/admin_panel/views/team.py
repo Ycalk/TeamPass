@@ -16,27 +16,27 @@ from teampass.admin_panel.formatters import (
     updated_at_formatter,
 )
 from teampass.admin_panel.inject import INJECT, inject_from_request
-from teampass.team.methods.accept_invitation import (
+from teampass.team.methods import (
     AcceptInvitationCommand,
     AcceptInvitationMethod,
-)
-from teampass.team.methods.invite_to_team import InviteToTeamCommand, InviteToTeamMethod
-from teampass.team.methods.leave_team import LeaveTeamCommand, LeaveTeamMethod
-from teampass.team.methods.transfer_captaincy import (
+    InvitationAlreadyExistsException,
+    InviteToTeamCommand,
+    InviteToTeamMethod,
+    LeaveTeamCommand,
+    LeaveTeamMethod,
     TransferCaptaincyCommand,
     TransferCaptaincyMethod,
 )
-from teampass.team.storage import Team as TeamModel
-from teampass.team.storage import TeamDAO, TeamLoadEnum
+from teampass.team.storage import Team, TeamDAO, TeamInvitationDAO, TeamLoadEnum
 from teampass.user.storage import User
 
 
-def members_count_formatter(model: TeamModel, _: Column[Any]) -> str:
+def members_count_formatter(model: Team, _: Column[Any]) -> str:
     """Форматтер для количества участников"""
     return str(len(model.members))
 
 
-def captain_name_formatter(model: TeamModel, _: Column[Any]) -> str:
+def captain_name_formatter(model: Team, _: Column[Any]) -> str:
     """Форматтер для имени капитана"""
     for member in model.members:
         if member.is_captain:
@@ -44,49 +44,49 @@ def captain_name_formatter(model: TeamModel, _: Column[Any]) -> str:
     return "Не назначен"
 
 
-class TeamView(ModelView, model=TeamModel):
+class TeamView(ModelView, model=Team):
     name: ClassVar[str] = "Команда"
     name_plural: ClassVar[str] = "Команды"
     category: ClassVar[str] = "Команды"
     icon: ClassVar[str] = "fa-solid fa-users"
 
     column_labels: ClassVar[dict[MODEL_ATTR, str]] = {
-        TeamModel.name: "Название команды",
-        TeamModel.created_at: "Создана",
-        TeamModel.updated_at: "Обновлена",
+        Team.name: "Название команды",
+        Team.created_at: "Создана",
+        Team.updated_at: "Обновлена",
         "members_count": "Участников",
         "captain_name": "Капитан",
     }
 
     column_list: ClassVar[Sequence[MODEL_ATTR]] = [
-        TeamModel.name,
+        Team.name,
         "members_count",
         "captain_name",
     ]
 
     column_details_list: ClassVar[Sequence[MODEL_ATTR]] = [
-        TeamModel.name,
-        TeamModel.created_at,
-        TeamModel.updated_at,
+        Team.name,
+        Team.created_at,
+        Team.updated_at,
     ]
 
     column_formatters: ClassVar[dict[MODEL_ATTR, Any]] = {
-        TeamModel.created_at: created_at_formatter,
-        TeamModel.updated_at: updated_at_formatter,
+        Team.created_at: created_at_formatter,
+        Team.updated_at: updated_at_formatter,
         "members_count": members_count_formatter,
         "captain_name": captain_name_formatter,
     }
 
     column_formatters_detail: ClassVar[dict[MODEL_ATTR, Any]] = {
-        TeamModel.created_at: created_at_formatter,
-        TeamModel.updated_at: updated_at_formatter,
+        Team.created_at: created_at_formatter,
+        Team.updated_at: updated_at_formatter,
     }
 
     column_searchable_list: ClassVar[Sequence[MODEL_ATTR]] = [
-        TeamModel.name,
+        Team.name,
     ]
 
-    form_columns: ClassVar[Sequence[MODEL_ATTR]] = [TeamModel.name]
+    form_columns: ClassVar[Sequence[MODEL_ATTR]] = [Team.name]
 
     can_create: ClassVar[bool] = True
     can_edit: ClassVar[bool] = True
@@ -97,7 +97,7 @@ class TeamView(ModelView, model=TeamModel):
     @override
     def list_query(self, request: Request) -> Select[Any]:
         stmt = super().list_query(request)
-        return stmt.options(selectinload(TeamModel.members).selectinload(User.student))
+        return stmt.options(selectinload(Team.members).selectinload(User.student))
 
     @expose("/add-member/{team_id}", methods=["POST"])
     @inject_from_request
@@ -107,6 +107,7 @@ class TeamView(ModelView, model=TeamModel):
         invite_to_team_method: FromDishka[InviteToTeamMethod] = INJECT,
         accept_invitation_method: FromDishka[AcceptInvitationMethod] = INJECT,
         team_dao: FromDishka[TeamDAO] = INJECT,
+        invitation_dao: FromDishka[TeamInvitationDAO] = INJECT,
     ):
         """Добавление участника в команду"""
         team_id = request.path_params.get("team_id")
@@ -115,7 +116,6 @@ class TeamView(ModelView, model=TeamModel):
 
         form = await request.form()
         invited_user_id = form.get("user_id")
-
         if not invited_user_id or not isinstance(invited_user_id, str):
             return RedirectResponse(url=f"/team/details/{team_id}", status_code=303)
 
@@ -125,12 +125,21 @@ class TeamView(ModelView, model=TeamModel):
             )
             if team is None or team.captain is None:
                 return RedirectResponse(url=f"/team/details/{team_id}", status_code=303)
-
-            invitation = await invite_to_team_method(
-                InviteToTeamCommand(
-                    user_id=team.captain.id, invited_user_id=UUID(invited_user_id)
+            try:
+                invitation = await invite_to_team_method(
+                    InviteToTeamCommand(
+                        user_id=team.captain.id, invited_user_id=UUID(invited_user_id)
+                    )
                 )
-            )
+            except InvitationAlreadyExistsException:
+                invitation = await invitation_dao.find_by_user_and_team(
+                    user_id=UUID(invited_user_id),
+                    team_id=team.id,
+                )
+                if invitation is None:
+                    return RedirectResponse(
+                        url=f"/team/details/{team_id}", status_code=303
+                    )
             await accept_invitation_method(
                 AcceptInvitationCommand(
                     user_id=UUID(invited_user_id), invitation_id=invitation.id
