@@ -13,7 +13,7 @@ def student_formatter(model: type, _: Column[Any]) -> str:
         raise TypeError("Model must be an instance of UserModel")
     return (
         f"{model.student.last_name} {model.student.first_name} "
-        f"{model.student.patronymic}"
+        + f"{model.student.patronymic or ''}".strip()
     )
 
 
