@@ -2,6 +2,12 @@ from dishka import Provider, Scope, provide, provide_all
 from dishka.dependency_source import CompositeDependencySource
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .methods import (
+    CreateCycleMethod,
+    CreateSnapshotMethod,
+    CreateTransactionMethod,
+    GetCurrentCycleMethod,
+)
 from .policies import TransactionPolicies
 from .storage import (
     CycleSnapshotDAO,
@@ -14,6 +20,14 @@ from .storage import (
 
 
 class TransactionProvider(Provider):
+    methods: CompositeDependencySource = provide_all(
+        CreateCycleMethod,
+        CreateSnapshotMethod,
+        CreateTransactionMethod,
+        GetCurrentCycleMethod,
+        scope=Scope.REQUEST,
+    )
+
     data_access_objects: CompositeDependencySource = provide_all(
         CycleSnapshotDAO,
         GameCycleDAO,

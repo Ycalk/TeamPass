@@ -16,5 +16,5 @@ class TransactionPolicies(LiveOptionBase):
     )
     point_ration: OptionDef[float] = OptionDef(
         description="Соотношение баллов активности к общему количеству баллов",
-        default_value=0.75,
+        default_value=0.8,
     )

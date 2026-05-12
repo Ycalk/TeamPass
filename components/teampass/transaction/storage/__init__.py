@@ -10,6 +10,7 @@ from .point_transaction import (
     PointTransactionDAO,
     PointTransactionDAOFactory,
     PointTransactionLoadEnum,
+    PointType,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "PointTransactionDAO",
     "PointTransactionDAOFactory",
     "PointTransactionLoadEnum",
+    "PointType",
 ]
