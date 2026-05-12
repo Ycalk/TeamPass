@@ -1,11 +1,11 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 from typing import Final, Self, override
 from uuid import UUID
 
 import structlog
-from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from dishka.integrations.starlette import FromDishka
 from opentelemetry import trace
 from pydantic import BaseModel, SecretStr, ValidationError, model_validator
@@ -63,7 +63,6 @@ class AdminAuth(AuthenticationBackend):
         request: Request,
         settings: FromDishka[AdminPanelSettings] = INJECT,
         login_admin_method: FromDishka[LoginAdminMethod] = INJECT,
-        password_hasher: FromDishka[PasswordHasher] = INJECT,
     ) -> bool:
         with _tracer.start_as_current_span("admin.login") as span:
             form = await request.form()
@@ -77,18 +76,18 @@ class AdminAuth(AuthenticationBackend):
                 return False
 
             span.set_attribute("admin.username", username)
-            if (
-                username == settings.super_admin_username
-                and password == settings.super_admin_password
-            ):
+            if secrets.compare_digest(
+                username, settings.super_admin_username
+            ) and secrets.compare_digest(password, settings.super_admin_password):
                 span.set_attribute("admin.type", "super_admin")
                 admin_session = AdminSession(
                     id=None,
                     admin_type=AdminType.SUPER_ADMIN,
                     expires_at=datetime.now(timezone.utc)
                     + timedelta(days=settings.admin_session_expire_days),
-                    password_hash=password_hasher.hash(password),
+                    password_hash=hashlib.sha256(password.encode()).hexdigest(),
                 )
+                request.session.clear()
                 request.session.update(admin_session.model_dump(mode="json"))
                 _logger.info("login_success", username=username)
                 return True
@@ -113,6 +112,7 @@ class AdminAuth(AuthenticationBackend):
                 + timedelta(days=settings.admin_session_expire_days),
                 password_hash=None,
             )
+            request.session.clear()
             request.session.update(admin_session.model_dump(mode="json"))
             _logger.info("login_success", username=username)
             return True
@@ -130,7 +130,6 @@ class AdminAuth(AuthenticationBackend):
         self,
         request: Request,
         admin_dao: FromDishka[AdminDAO] = INJECT,
-        password_hasher: FromDishka[PasswordHasher] = INJECT,
         settings: FromDishka[AdminPanelSettings] = INJECT,
     ) -> bool:
         with _tracer.start_as_current_span("admin.authenticate") as span:
@@ -140,6 +139,7 @@ class AdminAuth(AuthenticationBackend):
                 _logger.warning("invalid_session", error=e)
                 span.set_attribute("success", False)
                 span.record_exception(e)
+                request.session.clear()
                 return False
 
             span.set_attribute("admin.id", str(admin_session.id or "none"))
@@ -159,24 +159,17 @@ class AdminAuth(AuthenticationBackend):
                     span.set_attribute("success", False)
                     return False
 
-                try:
-                    password_hasher.verify(
-                        admin_session.password_hash,
-                        settings.super_admin_password,
-                    )
-                    span.set_attribute("success", True)
-                    return True
-                except (VerifyMismatchError, InvalidHashError):
+                real_password_hash = hashlib.sha256(
+                    settings.super_admin_password.encode()
+                ).hexdigest()
+                if not secrets.compare_digest(
+                    admin_session.password_hash, real_password_hash
+                ):
                     _logger.error("invalid_password")
                     request.session.clear()
                     span.set_attribute("success", False)
                     return False
-
-            if not await admin_dao.exists_by_id(admin_session.id):
-                _logger.warning("admin_not_found", admin_session=admin_session)
-                request.session.clear()
-                span.set_attribute("success", False)
-                return False
+                return True
 
             span.set_attribute("success", True)
             return True

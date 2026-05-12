@@ -2,6 +2,7 @@ from .admin import AdminView
 from .change_password import ChangePasswordView
 from .student import StudentView
 from .student_import import StudentImportView
+from .team import TeamView
 from .user import UserView
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "StudentView",
     "UserView",
     "StudentImportView",
+    "TeamView",
 ]

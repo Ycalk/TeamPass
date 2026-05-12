@@ -24,6 +24,7 @@ from .views import (
     ChangePasswordView,
     StudentImportView,
     StudentView,
+    TeamView,
     UserView,
 )
 
@@ -81,6 +82,7 @@ async def build_app() -> Starlette:
     admin.add_view(ChangePasswordView)
     admin.add_view(StudentView)
     admin.add_view(UserView)
+    admin.add_view(TeamView)
     admin.add_base_view(StudentImportView)
 
     return app

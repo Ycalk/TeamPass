@@ -1,0 +1,263 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fa-solid fa-users"></i> Управление командой: {{ model.name }}</h3>
+        </div>
+        <div class="card-body">
+            <!-- Информация о команде -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5>Информация о команде</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 40%">ID команды:</th>
+                                    <td>{{ model.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Название:</th>
+                                    <td><strong>{{ model.name }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Дата создания:</th>
+                                    <td>{{ model.created_at }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Последнее обновление:</th>
+                                    <td>{{ model.updated_at }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Участники команды -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5><i class="fa-solid fa-users"></i> Участники команды <span class="badge bg-light text-dark" id="members-count">0</span></h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width: 50px">#</th>
+                                            <th style="width: 35%">Участник</th>
+                                            <th style="width: 120px">Роль</th>
+                                            <th style="width: 250px">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="members-tbody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fa-solid fa-spinner fa-spin"></i> Загрузка...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Добавление участника -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5><i class="fa-solid fa-user-plus"></i> Добавить участника</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="user_id" class="form-label">Выберите пользователя</label>
+                                <select id="user_id" class="form-select">
+                                    <option value="">Загрузка пользователей...</option>
+                                </select>
+                            </div>
+                            <button type="button" id="add-member-btn" class="btn btn-success w-100">
+                                <i class="fa-solid fa-user-plus"></i> Добавить в команду
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопки навигации -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <hr>
+                    <a href="/team/list" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> Назад к списку
+                    </a>
+                    <a href="/team/edit/{{ model.id }}" class="btn btn-warning">
+                        <i class="fa-solid fa-edit"></i> Редактировать команду
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const teamId = '{{ model.id }}';
+    
+    async function loadMembers() {
+        try {
+            const response = await fetch(`/team/get-members/${teamId}`);
+            const members = await response.json();
+            
+            const tbody = document.getElementById('members-tbody');
+            const countSpan = document.getElementById('members-count');
+            
+            countSpan.textContent = members.length;
+            
+            if (members.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-info-circle"></i> В команде пока нет участников</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = members.map((member, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <a href="${member.user_details_url}" target="_blank" class="text-decoration-none fw-bold">
+                                ${escapeHtml(member.full_name)}
+                            </a>
+                            <small class="text-muted">${escapeHtml(member.email || 'Нет email')}</small>
+                        </div>
+                    </td>
+                    <td>
+                        ${member.is_captain ? 
+                            '<span class="badge bg-warning text-dark"><i class="fa-solid fa-crown"></i> Капитан</span>' : 
+                            '<span class="badge bg-secondary"><i class="fa-solid fa-user"></i> Участник</span>'}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            ${!member.is_captain ? `
+                                <button class="btn btn-sm btn-info make-captain-btn me-1" data-user-id="${member.id}">
+                                    <i class="fa-solid fa-crown"></i> Назначить
+                                </button>
+                                <button class="btn btn-sm btn-danger remove-member-btn" data-user-id="${member.id}">
+                                    <i class="fa-solid fa-user-minus"></i> Удалить
+                                </button>
+                            ` : '<span class="text-muted"><i class="fa-solid fa-lock"></i> Капитан</span>'}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Назначаем обработчики
+            document.querySelectorAll('.make-captain-btn').forEach(btn => {
+                btn.onclick = () => changeCaptain(btn.dataset.userId);
+            });
+            document.querySelectorAll('.remove-member-btn').forEach(btn => {
+                btn.onclick = () => removeMember(btn.dataset.userId);
+            });
+        } catch (error) {
+            console.error('Ошибка загрузки участников:', error);
+            document.getElementById('members-tbody').innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="fa-solid fa-exclamation-triangle"></i> Ошибка загрузки</td></tr>';
+        }
+    }
+    
+    async function loadAvailableUsers() {
+        try {
+            const response = await fetch(`/team/get-available-users/${teamId}`);
+            const users = await response.json();
+            
+            const select = document.getElementById('user_id');
+            if (users.length === 0) {
+                select.innerHTML = '<option value="">Нет доступных пользователей</option>';
+                return;
+            }
+            
+            select.innerHTML = '<option value="">-- Выберите пользователя --</option>' + 
+                users.map(user => `<option value="${user.id}">${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)} (${escapeHtml(user.email || 'нет email')})</option>`).join('');
+        } catch (error) {
+            console.error('Ошибка загрузки пользователей:', error);
+            document.getElementById('user_id').innerHTML = '<option value="">Ошибка загрузки</option>';
+        }
+    }
+    
+    async function addMember() {
+        const select = document.getElementById('user_id');
+        const userId = select.value;
+        if (!userId) {
+            alert('Выберите пользователя');
+            return;
+        }
+        
+        const response = await fetch(`/team/add-member/${teamId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `user_id=${userId}`
+        });
+        
+        if (response.ok) {
+            await loadMembers();
+            await loadAvailableUsers();
+            select.value = '';
+        } else {
+            alert('Ошибка при добавлении');
+        }
+    }
+    
+    async function removeMember(userId) {
+        if (!confirm('Удалить участника из команды?')) return;
+        
+        const response = await fetch(`/team/remove-member/${teamId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `user_id=${userId}`
+        });
+        
+        if (response.ok) {
+            await loadMembers();
+            await loadAvailableUsers();
+        } else {
+            alert('Ошибка при удалении');
+        }
+    }
+    
+    async function changeCaptain(userId) {
+        if (!confirm('Назначить этого пользователя капитаном?')) return;
+        
+        const response = await fetch(`/team/change-captain/${teamId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `user_id=${userId}`
+        });
+        
+        if (response.ok) {
+            await loadMembers();
+        } else {
+            alert('Ошибка при смене капитана');
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    document.getElementById('add-member-btn').onclick = addMember;
+    
+    loadMembers();
+    loadAvailableUsers();
+</script>
+{% endblock %}
