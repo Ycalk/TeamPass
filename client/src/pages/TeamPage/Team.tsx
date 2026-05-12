@@ -34,9 +34,10 @@ export const Team = () => {
       setTeam(teamRes.data);
 
       setIsCaptain(
-        teamRes.data.captain.id ===
-          meRes.data.id
+        String(teamRes.data.captain.id) ===
+        String(meRes.data.id)
       );
+      
     } finally {
       setLoading(false);
     }

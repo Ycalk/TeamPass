@@ -29,7 +29,7 @@ export const transferCaptaincy = async (
   userId: string
 ) => {
   return api.patch("/teams/me/captaincy", {
-    user_id: userId,
+    new_captain_id: userId,
   });
 };
 

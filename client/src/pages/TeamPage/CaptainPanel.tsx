@@ -190,25 +190,43 @@ export const CaptainPanel = ({
             `;
 
             return (
-              <div
+                <div
                 key={invite.id}
                 className="flex items-center justify-between bg-white/10 p-3 rounded-xl"
               >
-                <div>{fullName}</div>
+                    <div>{fullName}</div>
 
-                <button
-                  onClick={async () => {
-                    await deleteTeamInvitation(
-                      invite.id
-                    );
+                    {!invite.accepted_at && (
+                        <button
+                            onClick={async () => {
+                            try {
+                                await deleteTeamInvitation(
+                                invite.id
+                                );
 
-                    loadInvites();
-                  }}
-                  className="text-red-400"
-                >
-                  ✕
-                </button>
-              </div>
+                                loadInvites();
+                            } catch (e: any) {
+                                if (
+                                e.response?.status === 409
+                                ) {
+                                alert(
+                                    "Приглашение уже принято"
+                                );
+
+                                return;
+                                }
+
+                                alert(
+                                "Ошибка удаления приглашения"
+                                );
+                            }
+                            }}
+                            className="text-red-400"
+                        >
+                            ✕
+                        </button>
+                        )}
+                </div>
             );
           })}
         </div>

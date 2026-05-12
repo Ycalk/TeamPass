@@ -2,6 +2,7 @@ import {
   removeMember,
   transferCaptaincy,
 } from "../../api/teams";
+import { useState } from 'react';
 
 type Props = {
   member: any;
@@ -16,14 +17,16 @@ export const MemberCard = ({
   isCaptain,
   onReload,
 }: Props) => {
-  const isCurrentCaptain =
-    member.id === captainId;
+    const [menuOpen, setMenuOpen] = useState(false);
 
-  const fullName = `
-    ${member.student.last_name}
-    ${member.student.first_name}
-    ${member.student.patronymic}
-  `;
+    const isCurrentCaptain =
+        String(member.id) === String(captainId);
+
+    const fullName = `
+        ${member.student.last_name}
+        ${member.student.first_name}
+        ${member.student.patronymic}
+    `;
 
   return (
     <div className="flex justify-between items-center border rounded-2xl p-4">
@@ -39,33 +42,60 @@ export const MemberCard = ({
         </div>
       </div>
 
-      {isCaptain && !isCurrentCaptain && (
-        <div className="flex gap-2">
-          <button
-            onClick={async () => {
-              await transferCaptaincy(
-                member.id
-              );
+    {isCaptain && !isCurrentCaptain && (
+        <div className="relative">
+            <button
+            onClick={() =>
+                setMenuOpen(!menuOpen)
+            }
+            className="text-2xl"
+            >
+            ⚙
+            </button>
 
-              onReload();
-            }}
-            className="px-3 py-1 rounded-lg bg-yellow-500 text-white"
-          >
-            Передать капитанство
-          </button>
+            {menuOpen && (
+            <div className="absolute right-0 mt-2 bg-white border rounded-xl shadow-lg p-2 z-10 min-w-[220px]">
+                <button
+                onClick={async () => {
+                    try {
+                    await transferCaptaincy(
+                        member.id
+                    );
 
-          <button
-            onClick={async () => {
-              await removeMember(member.id);
+                    onReload();
+                    } catch {
+                    alert(
+                        "Ошибка передачи капитанства"
+                    );
+                    }
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg"
+                >
+                Передать капитанство
+                </button>
 
-              onReload();
-            }}
-            className="px-3 py-1 rounded-lg bg-red-500 text-white"
-          >
-            Удалить
-          </button>
+                <button
+                onClick={async () => {
+                    try {
+                    await removeMember(
+                        member.id
+                    );
+
+                    onReload();
+                    } catch {
+                    alert(
+                        "Ошибка удаления участника"
+                    );
+                    }
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-red-500"
+                >
+                Удалить из команды
+                </button>
+            </div>
+            )}
         </div>
-      )}
+        )}
     </div>
   );
 };
