@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, Final, override
 from uuid import UUID
 
 from sqlalchemy import Index, String, and_, func, select, text
@@ -15,17 +15,21 @@ from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 if TYPE_CHECKING:
     from .user import User
 
+_search_expr: Final[str] = (
+    "((((((student_id::text || ' '::text) || first_name::text) || ' '::text) "
+    + "|| last_name::text) || ' '::text) "
+    + "|| COALESCE(patronymic, ''::character varying)::text)"
+)
+
 
 class Student(BaseModel):
     __tablename__: str = "student"
     __table_args__: tuple[Any, ...] = (
         Index(
             "ix_student_search_vector_trgm",
-            text(
-                "(student_id || ' ' || first_name || ' ' || "
-                + "last_name || ' ' || coalesce(patronymic, '')) gin_trgm_ops"
-            ),
+            text(_search_expr),
             postgresql_using="gin",
+            postgresql_ops={_search_expr: "gin_trgm_ops"},
         ),
     )
 

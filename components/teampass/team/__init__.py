@@ -1,4 +1,5 @@
 from .core import TeamProvider
+from .dto import Team, TeamInvitation
 from .methods import (
     AcceptInvitationCommand,
     AcceptInvitationMethod,
@@ -38,6 +39,8 @@ from .policies import TeamPolicies
 __all__ = [
     "TeamProvider",
     "TeamPolicies",
+    "Team",
+    "TeamInvitation",
     "AcceptInvitationCommand",
     "AcceptInvitationMethod",
     "AcceptInvitationPayload",
