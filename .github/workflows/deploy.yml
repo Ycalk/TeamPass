@@ -53,14 +53,6 @@ jobs:
           poetry self add poetry-polylith-plugin
           poetry self add poetry-plugin-export
           poetry install
-      
-      - name: Create media bucket in SeaweedFS
-        env:
-          AWS_ACCESS_KEY_ID: ${{ env.S3_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.S3_SECRET_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.S3_REGION_NAME }}
-        run: |
-          aws --endpoint-url http://localhost:8333 s3 mb s3://media
 
       - name: Run tests with pytest
         run: |
