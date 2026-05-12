@@ -105,7 +105,7 @@ jobs:
 
       - name: Archive code for deploy
         run: |
-          zip -r deploy.zip docker-compose.yaml projects/ jaeger/
+          zip -r deploy.zip docker-compose.yaml projects/ jaeger/ seaweedfs/
 
       - name: Create .env file
         run: |
