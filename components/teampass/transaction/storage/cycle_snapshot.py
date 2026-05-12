@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, overload, override
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, ForeignKey, func
+from sqlalchemy import CheckConstraint, ForeignKey, Numeric, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 from sqlalchemy.orm.interfaces import ORMOption
@@ -39,9 +40,9 @@ class CycleSnapshot(BaseModel):
     user_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user.id", ondelete="CASCADE"), index=True, server_default=None
     )
-    activity_score: Mapped[int] = mapped_column()
-    bonus_score: Mapped[int] = mapped_column()
-    total_score: Mapped[int] = mapped_column()
+    activity_score: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    bonus_score: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    total_score: Mapped[Decimal] = mapped_column(Numeric(8, 2))
 
     user: Mapped[User | None] = relationship(back_populates="cycle_snapshots")
     team: Mapped[Team | None] = relationship(back_populates="cycle_snapshots")
@@ -73,36 +74,48 @@ class CycleSnapshotDAO(BaseDAO[CycleSnapshot, UUID, CycleSnapshotLoadEnum]):
     @overload
     async def create(
         self,
-        activity_score: int,
-        bonus_score: int,
-        total_score: int,
+        activity_score: Decimal,
+        bonus_score: Decimal,
+        total_score: Decimal,
         cycle_id: UUID,
         *,
         team_id: UUID,
-    ): ...
+    ) -> CycleSnapshot: ...
 
     @overload
     async def create(
         self,
-        activity_score: int,
-        bonus_score: int,
-        total_score: int,
+        activity_score: Decimal,
+        bonus_score: Decimal,
+        total_score: Decimal,
         cycle_id: UUID,
         *,
         user_id: UUID,
-    ): ...
+    ) -> CycleSnapshot: ...
+
+    @overload
+    async def create(
+        self,
+        activity_score: Decimal,
+        bonus_score: Decimal,
+        total_score: Decimal,
+        cycle_id: UUID,
+        *,
+        team_id: UUID | None,
+        user_id: UUID | None,
+    ) -> CycleSnapshot: ...
 
     async def create(
         self,
-        activity_score: int,
-        bonus_score: int,
-        total_score: int,
+        activity_score: Decimal,
+        bonus_score: Decimal,
+        total_score: Decimal,
         cycle_id: UUID,
         *,
         team_id: UUID | None = None,
         user_id: UUID | None = None,
     ) -> CycleSnapshot:
-        if (team_id is None) ^ (user_id is None):
+        if (team_id is None) == (user_id is None):
             raise ValueError("Provide exactly one of team_id or user_id")
         obj = CycleSnapshot(
             activity_score=activity_score,
@@ -114,6 +127,26 @@ class CycleSnapshotDAO(BaseDAO[CycleSnapshot, UUID, CycleSnapshotLoadEnum]):
         )
         await self.save(obj)
         return obj
+
+    async def find_by_cycle_id_and_team_id_or_user_id(
+        self,
+        cycle_id: UUID,
+        *,
+        team_id: UUID | None = None,
+        user_id: UUID | None = None,
+    ) -> CycleSnapshot | None:
+        filters = [CycleSnapshot.cycle_id == cycle_id]
+        if team_id is not None:
+            filters.append(CycleSnapshot.team_id == team_id)
+        elif user_id is not None:
+            filters.append(CycleSnapshot.user_id == user_id)
+
+        stmt = select(
+            CycleSnapshot,
+        ).where(and_(*filters))
+        result = await self._session.execute(stmt)
+
+        return result.scalar_one_or_none()
 
 
 class CycleSnapshotDAOFactory(BaseDAOFactory[CycleSnapshotDAO]):

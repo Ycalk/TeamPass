@@ -42,17 +42,17 @@ class BaseModel(AsyncAttrs, DeclarativeBase):
     )
 
 
-class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
-    def __init__(self, session: AsyncSession, model: type[Model]):
+class BaseDAO[TModel: BaseModel, TId, TLoadEnum: StrEnum](ABC):
+    def __init__(self, session: AsyncSession, model: type[TModel]):
         self._session: AsyncSession = session
-        self.model: type[Model] = model
+        self.model: type[TModel] = model
 
     @property
     @abstractmethod
-    def _load_mapper(self) -> dict[LoadEnum, ORMOption | Sequence[ORMOption]]:
+    def _load_mapper(self) -> dict[TLoadEnum, ORMOption | Sequence[ORMOption]]:
         pass
 
-    def get_options(self, includes: Sequence[LoadEnum]) -> Sequence[ORMOption]:
+    def get_options(self, includes: Sequence[TLoadEnum]) -> Sequence[ORMOption]:
         options: list[ORMOption] = []
         for include in includes:
             option = self._load_mapper.get(include)
@@ -64,7 +64,7 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
                 options.append(option)
         return options
 
-    async def save(self, obj: Model) -> Model:
+    async def save(self, obj: TModel) -> TModel:
         self._session.add(obj)
         await self._session.flush()
         await self._session.refresh(
@@ -73,13 +73,13 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         )
         return obj
 
-    async def delete(self, obj: Model) -> None:
+    async def delete(self, obj: TModel) -> None:
         await self._session.delete(obj)
         await self._session.flush()
 
     async def find_by_id(
-        self, id: Id, includes: Sequence[LoadEnum] | None = None
-    ) -> Model | None:
+        self, id: TId, includes: Sequence[TLoadEnum] | None = None
+    ) -> TModel | None:
         return await self._session.get(
             self.model,
             id,
@@ -91,8 +91,8 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         self,
         skip: int = 0,
         limit: int | None = None,
-        includes: Sequence[LoadEnum] | None = None,
-    ) -> Sequence[Model]:
+        includes: Sequence[TLoadEnum] | None = None,
+    ) -> Sequence[TModel]:
         stmt = select(self.model).offset(skip)
         if includes is not None:
             stmt = stmt.options(*self.get_options(includes))
@@ -102,24 +102,24 @@ class BaseDAO[Model: BaseModel, Id, LoadEnum: StrEnum](ABC):
         result = (await self._session.execute(stmt)).scalars().all()
         return result
 
-    async def exists_by_id(self, id: Id) -> bool:
+    async def exists_by_id(self, id: TId) -> bool:
         return await self.find_by_id(id) is not None
 
     async def commit(self) -> None:
         await self._session.commit()
 
 
-class BaseDAOFactory[DAO: BaseDAO[Any, Any, Any]]:
+class BaseDAOFactory[TDAO: BaseDAO[Any, Any, Any]]:
     def __init__(
         self,
         session_maker: async_sessionmaker[AsyncSession],
-        dao_cls: Callable[[AsyncSession], DAO],
+        dao_cls: Callable[[AsyncSession], TDAO],
     ) -> None:
         self._session_maker: async_sessionmaker[AsyncSession] = session_maker
-        self.dao_cls: Callable[[AsyncSession], DAO] = dao_cls
+        self.dao_cls: Callable[[AsyncSession], TDAO] = dao_cls
 
     @asynccontextmanager
-    async def __call__(self) -> AsyncGenerator[DAO]:
+    async def __call__(self) -> AsyncGenerator[TDAO]:
         async with self._session_maker() as session:
             yield self.dao_cls(session)
 

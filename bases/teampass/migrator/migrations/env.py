@@ -35,6 +35,9 @@ def register_models() -> list[type[BaseModel]]:
     from teampass.live_option.core import (
         _LiveOptionStorage,  # pyright: ignore[reportPrivateUsage]
     )
+    from teampass.market.storage import MarketDeal, MarketListing, MarketResponse
+    from teampass.media_storage.storage import Media
+    from teampass.report.storage import Report
     from teampass.team.storage import Team, TeamInvitation
     from teampass.transaction.storage import CycleSnapshot, GameCycle, PointTransaction
     from teampass.user.storage import Student, StudentProfile, User
@@ -50,6 +53,11 @@ def register_models() -> list[type[BaseModel]]:
         CycleSnapshot,
         GameCycle,
         PointTransaction,
+        Media,
+        Report,
+        MarketDeal,
+        MarketListing,
+        MarketResponse,
     ]
 
 

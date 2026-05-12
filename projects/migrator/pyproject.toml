@@ -15,6 +15,7 @@ packages = [
     {include = "teampass/admin",from = "../../components"},
     {include = "teampass/live_option",from = "../../components"},
     {include = "teampass/transaction",from = "../../components"},
+    {include = "teampass/media_storage",from = "../../components"},
 ]
 
 [tool.poetry.dependencies]

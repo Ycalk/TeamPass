@@ -14,6 +14,8 @@ from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 from .student_profile import StudentProfile
 
 if TYPE_CHECKING:
+    from teampass.media_storage.storage import Media
+    from teampass.report.storage import Report
     from teampass.team.storage import Team, TeamInvitation
     from teampass.transaction.storage import CycleSnapshot, PointTransaction
 
@@ -58,6 +60,12 @@ class User(BaseModel):
     )
     cycle_snapshots: Mapped[list[CycleSnapshot]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    media: Mapped[list[Media]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
+    )
+    reports: Mapped[list[Report]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
