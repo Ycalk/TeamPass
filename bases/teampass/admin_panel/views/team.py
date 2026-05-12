@@ -1,12 +1,12 @@
 import json
 from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import Any, ClassVar, override
 from uuid import UUID
 
 from dishka.integrations.starlette import FromDishka
 from sqladmin import ModelView, expose
 from sqladmin._types import MODEL_ATTR
-from sqlalchemy import Column, select
+from sqlalchemy import Column, Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from starlette.requests import Request
@@ -93,6 +93,11 @@ class TeamView(ModelView, model=TeamModel):
     can_delete: ClassVar[bool] = True
 
     details_template: ClassVar[str] = "team_details.html"
+
+    @override
+    def list_query(self, request: Request) -> Select[Any]:
+        stmt = super().list_query(request)
+        return stmt.options(selectinload(TeamModel.members).selectinload(User.student))
 
     @expose("/add-member/{team_id}", methods=["POST"])
     @inject_from_request
