@@ -17,8 +17,11 @@ _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
 
-class UploadMediaCommand(BaseModel):
+class UploadMediaPayload(BaseModel):
     media_data: bytes
+
+
+class UploadMediaCommand(UploadMediaPayload):
     user_id: UUID
 
 

@@ -16,9 +16,12 @@ _tracer: Final[trace.Tracer] = trace.get_tracer(__name__)
 _logger: Final[structlog.BoundLogger] = structlog.get_logger(__name__)
 
 
-class CreateReportCommand(BaseModel):
-    user_id: UUID
+class CreateReportPayload(BaseModel):
     content: ReportContent
+
+
+class CreateReportCommand(CreateReportPayload):
+    user_id: UUID
 
 
 class CreateReportMethod(DomainMethod[CreateReportCommand, UUID]):
