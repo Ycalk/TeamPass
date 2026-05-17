@@ -1,7 +1,5 @@
 from collections.abc import AsyncIterator
-from pathlib import Path
 
-import pytest
 import pytest_asyncio
 from dishka import AsyncContainer, Provider, make_async_container
 from teampass.database import DatabaseProvider
@@ -74,11 +72,3 @@ async def media_storage_settings(
     request_container: AsyncContainer,
 ) -> MediaStorageSettings:
     return await request_container.get(MediaStorageSettings)
-
-
-@pytest.fixture
-def test_png() -> bytes:
-    current_dir = Path(__file__).resolve().parent
-    with open(current_dir / "test.png", "rb") as f:
-        file_bytes = f.read()
-    return file_bytes

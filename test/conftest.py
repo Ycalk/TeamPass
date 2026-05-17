@@ -1,5 +1,6 @@
 import sys
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -59,3 +60,11 @@ async def request_container(
 ) -> AsyncIterator[AsyncContainer]:
     async with app_container() as request_container:
         yield request_container
+
+
+@pytest.fixture
+def test_png() -> bytes:
+    current_dir = Path(__file__).resolve().parent
+    with open(current_dir / "test.png", "rb") as f:
+        file_bytes = f.read()
+    return file_bytes
