@@ -5,16 +5,15 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, override
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, func
+from sqlalchemy import ForeignKey, Index, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
+from teampass.team.storage import Team
+from teampass.user.storage import User
 
 if TYPE_CHECKING:
-    from teampass.team.storage import Team
-    from teampass.user.storage import User
-
     from .market_deal import MarketDeal
     from .market_listing import MarketListing
 
@@ -81,7 +80,11 @@ class MarketResponseDAO(BaseDAO[MarketResponse, UUID, MarketResponseLoadEnum]):
     ) -> dict[MarketResponseLoadEnum, ORMOption | Sequence[ORMOption]]:
         return {
             MarketResponseLoadEnum.RESPONDER: joinedload(MarketResponse.responder),
-            MarketResponseLoadEnum.TEAM: joinedload(MarketResponse.team),
+            MarketResponseLoadEnum.TEAM: (
+                joinedload(MarketResponse.team)
+                .selectinload(Team.members)
+                .joinedload(User.student)
+            ),
             MarketResponseLoadEnum.MARKET_LISTING: joinedload(
                 MarketResponse.market_listing
             ),
@@ -102,6 +105,35 @@ class MarketResponseDAO(BaseDAO[MarketResponse, UUID, MarketResponseLoadEnum]):
         )
         await self.save(obj)
         return obj
+
+    async def find_by_listing_id(
+        self,
+        market_listing_id: UUID,
+        includes: list[MarketResponseLoadEnum] | None = None,
+    ) -> list[MarketResponse]:
+        stmt = select(MarketResponse).where(
+            MarketResponse.market_listing_id == market_listing_id
+        )
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def reject_others_for_listing(
+        self,
+        market_listing_id: UUID,
+        accepted_response_id: UUID,
+    ) -> None:
+        stmt = (
+            update(MarketResponse)
+            .where(
+                MarketResponse.market_listing_id == market_listing_id,
+                MarketResponse.id != accepted_response_id,
+            )
+            .values(status=MarketResponseStatus.REJECTED)
+        )
+        await self._session.execute(stmt)
 
 
 class MarketResponseDAOFactory(BaseDAOFactory[MarketResponseDAO]):
