@@ -61,3 +61,8 @@ class MarketDeal(BaseModel):
         return cls(
             id=deal.id, market_response_id=deal.market_response_id, status=deal.status
         )
+
+
+class TokensInfo(BaseModel):
+    free_tokens: int
+    reserved_tokens: int

@@ -106,6 +106,80 @@ class MarketListingDAO(BaseDAO[MarketListing, UUID, MarketListingLoadEnum]):
         result = await self._session.execute(stmt)
         return result.scalar_one()
 
+    async def find_without_deals(
+        self,
+        includes: list[MarketListingLoadEnum] | None = None,
+    ) -> list[MarketListing]:
+        from .market_response import MarketResponse, MarketResponseStatus
+
+        subq = (
+            select(MarketListing.id)
+            .join(MarketResponse, MarketResponse.market_listing_id == MarketListing.id)
+            .where(MarketResponse.status == MarketResponseStatus.ACCEPTED)
+            .scalar_subquery()
+        )
+        stmt = select(MarketListing).where(~MarketListing.id.in_(subq))
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def find_by_team_id(
+        self,
+        team_id: UUID,
+        includes: list[MarketListingLoadEnum] | None = None,
+    ) -> list[MarketListing]:
+        stmt = select(MarketListing).where(MarketListing.team_id == team_id)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def count_completed_by_team_and_cycle(
+        self,
+        team_id: UUID,
+        game_cycle_id: UUID,
+    ) -> int:
+        from .market_deal import MarketDeal, MarketDealStatus
+        from .market_response import MarketResponse
+
+        stmt = (
+            select(func.count())
+            .select_from(MarketListing)
+            .join(MarketResponse, MarketResponse.market_listing_id == MarketListing.id)
+            .join(MarketDeal, MarketDeal.market_response_id == MarketResponse.id)
+            .where(
+                MarketListing.team_id == team_id,
+                MarketListing.game_cycle_id == game_cycle_id,
+                MarketDeal.status == MarketDealStatus.COMPLETED,
+            )
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
+    async def count_without_deals_by_team_and_cycle(
+        self,
+        team_id: UUID,
+        game_cycle_id: UUID,
+    ) -> int:
+        from .market_response import MarketResponse, MarketResponseStatus
+
+        subq = (
+            select(MarketListing.id)
+            .join(MarketResponse, MarketResponse.market_listing_id == MarketListing.id)
+            .where(MarketResponse.status == MarketResponseStatus.ACCEPTED)
+            .scalar_subquery()
+        )
+        stmt = select(func.count()).where(
+            MarketListing.team_id == team_id,
+            MarketListing.game_cycle_id == game_cycle_id,
+            ~MarketListing.id.in_(subq),
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
 
 class MarketListingDAOFactory(BaseDAOFactory[MarketListingDAO]):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:

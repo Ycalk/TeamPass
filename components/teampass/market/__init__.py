@@ -1,6 +1,8 @@
 from .core import MarketProvider
-from .dto import MarketDeal, MarketListing, MarketResponse
+from .dto import MarketDeal, MarketListing, MarketResponse, TokensInfo
 from .methods import (
+    CompleteDealCommand,
+    CompleteDealMethod,
     CreateDealCommand,
     CreateDealMethod,
     CreateDealPayload,
@@ -13,6 +15,7 @@ from .methods import (
     CreateResponseCommand,
     CreateResponseMethod,
     CreateResponsePayload,
+    DealCompletionForbiddenException,
     DealCreationForbiddenException,
     ListingsLimitReachedException,
     MarketDealNotFoundException,
@@ -34,6 +37,7 @@ __all__ = [
     "MarketDeal",
     "MarketListing",
     "MarketResponse",
+    "TokensInfo",
     "CreateListingCommand",
     "CreateListingMethod",
     "CreateListingPayload",
@@ -58,4 +62,7 @@ __all__ = [
     "ReportAlreadyExistsException",
     "ReportUpdateForbiddenException",
     "UserNotInTeamException",
+    "CompleteDealCommand",
+    "CompleteDealMethod",
+    "DealCompletionForbiddenException",
 ]

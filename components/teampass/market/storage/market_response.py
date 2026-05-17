@@ -135,6 +135,18 @@ class MarketResponseDAO(BaseDAO[MarketResponse, UUID, MarketResponseLoadEnum]):
         )
         await self._session.execute(stmt)
 
+    async def find_by_team_id(
+        self,
+        team_id: UUID,
+        includes: list[MarketResponseLoadEnum] | None = None,
+    ) -> list[MarketResponse]:
+        stmt = select(MarketResponse).where(MarketResponse.team_id == team_id)
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
 
 class MarketResponseDAOFactory(BaseDAOFactory[MarketResponseDAO]):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:
