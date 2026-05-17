@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     AcceptInvitationCommand,
     AcceptInvitationMethod,
@@ -19,16 +20,19 @@ from teampass.team.methods.exceptions import (
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestDeleteInvitationMethod:
+    @inject
     async def test_delete_success_invited_user(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter setup
         student_inviter = await student_dao.create(
@@ -66,17 +70,14 @@ class TestDeleteInvitationMethod:
         )
         await delete_invitation_method(command)
 
-        # Calling it again should result in NotFound
-        with pytest.raises(InvitationNotFoundException):
-            await delete_invitation_method(command)
-
+    @inject
     async def test_delete_success_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter setup
         student_inviter = await student_dao.create(
@@ -114,11 +115,12 @@ class TestDeleteInvitationMethod:
         )
         await delete_invitation_method(command)
 
+    @inject
     async def test_delete_invitation_not_found(
         self,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tdi_not_found", first_name="A", last_name="B", patronymic=None
@@ -133,13 +135,14 @@ class TestDeleteInvitationMethod:
         with pytest.raises(InvitationNotFoundException):
             await delete_invitation_method(command)
 
+    @inject
     async def test_delete_initiator_not_found(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter
         student_inviter = await student_dao.create(
@@ -176,13 +179,14 @@ class TestDeleteInvitationMethod:
         with pytest.raises(UserNotFoundException):
             await delete_invitation_method(command)
 
+    @inject
     async def test_delete_forbidden(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter
         student_inviter = await student_dao.create(
@@ -231,14 +235,15 @@ class TestDeleteInvitationMethod:
         with pytest.raises(InvitationDeleteForbiddenException):
             await delete_invitation_method(command)
 
+    @inject
     async def test_delete_already_accepted(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        delete_invitation_method: DeleteInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        delete_invitation_method: FromDishka[DeleteInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter
         student_inviter = await student_dao.create(

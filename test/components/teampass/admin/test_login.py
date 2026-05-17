@@ -1,5 +1,6 @@
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.admin.methods.login import (
     InvalidUsernameOrPasswordException,
@@ -8,14 +9,17 @@ from teampass.admin.methods.login import (
 )
 from teampass.admin.storage import AdminDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestLoginAdminMethod:
+    @inject
     async def test_login_success(
         self,
-        login_admin_method: LoginAdminMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        login_admin_method: FromDishka[LoginAdminMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         await admin_dao.create(
             username="loginadmin",
@@ -32,9 +36,10 @@ class TestLoginAdminMethod:
         assert admin_dto is not None
         assert admin_dto.username == "loginadmin"
 
+    @inject
     async def test_login_invalid_username(
         self,
-        login_admin_method: LoginAdminMethod,
+        login_admin_method: FromDishka[LoginAdminMethod],
     ) -> None:
         command = LoginAdminCommand(
             username="nonexistentadmin",
@@ -46,11 +51,12 @@ class TestLoginAdminMethod:
 
         assert exc_info.value.username == "nonexistentadmin"
 
+    @inject
     async def test_login_invalid_password(
         self,
-        login_admin_method: LoginAdminMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        login_admin_method: FromDishka[LoginAdminMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         await admin_dao.create(
             username="invalidpassadmin",

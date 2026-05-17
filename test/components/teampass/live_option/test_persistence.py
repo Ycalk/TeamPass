@@ -1,15 +1,19 @@
 from typing import ClassVar
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 from teampass.live_option import LiveOptionBase, OptionDef
+
+from development.pytest_inject import inject
 
 from .conftest import SampleOption
 
 
 @pytest.mark.asyncio
 class TestLiveOptionPersistence:
-    async def test_save_and_sync(self, session: AsyncSession) -> None:
+    @inject
+    async def test_save_and_sync(self, session: FromDishka[AsyncSession]) -> None:
         option = SampleOption(session)
         option.greeting = "Saved"
         option.max_retries = 42
@@ -26,8 +30,9 @@ class TestLiveOptionPersistence:
         assert reloaded.enabled is False
         assert reloaded.ratio == 3.14
 
+    @inject
     async def test_sync_without_saved_data_keeps_defaults(
-        self, session: AsyncSession
+        self, session: FromDishka[AsyncSession]
     ) -> None:
         class FreshOption(LiveOptionBase):
             name: ClassVar[str] = "fresh_option_unsaved"
@@ -38,7 +43,10 @@ class TestLiveOptionPersistence:
 
         assert option.value == 999
 
-    async def test_save_updates_existing(self, session: AsyncSession) -> None:
+    @inject
+    async def test_save_updates_existing(
+        self, session: FromDishka[AsyncSession]
+    ) -> None:
         class UpdatableOption(LiveOptionBase):
             name: ClassVar[str] = "updatable_option"
 
@@ -57,7 +65,8 @@ class TestLiveOptionPersistence:
         reloaded = await UpdatableOption(session).sync()
         assert reloaded.counter == 2
 
-    async def test_save_returns_self(self, session: AsyncSession) -> None:
+    @inject
+    async def test_save_returns_self(self, session: FromDishka[AsyncSession]) -> None:
         option = SampleOption(session)
         result = await option.save()
 

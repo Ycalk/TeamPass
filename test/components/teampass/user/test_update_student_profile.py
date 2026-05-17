@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import ValidationError
 from teampass.user import (
     UpdateStudentProfileCommand,
@@ -10,15 +11,18 @@ from teampass.user import (
 )
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestUpdateStudentProfileMethod:
+    @inject
     async def test_update_profile_success_all_fields(
         self,
-        update_student_profile_method: UpdateStudentProfileMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        update_student_profile_method: FromDishka[UpdateStudentProfileMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="up123",
@@ -49,12 +53,13 @@ class TestUpdateStudentProfileMethod:
         assert profile_dto.strengths_text == "Python, SQL"
         assert profile_dto.weaknesses_text == "C++"
 
+    @inject
     async def test_update_profile_success_partial_fields_and_reset(
         self,
-        update_student_profile_method: UpdateStudentProfileMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        update_student_profile_method: FromDishka[UpdateStudentProfileMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="up124",
@@ -89,9 +94,10 @@ class TestUpdateStudentProfileMethod:
         assert profile_dto.vk_profile_link is None
         assert profile_dto.strengths_text == "Go"
 
+    @inject
     async def test_update_profile_user_not_found(
         self,
-        update_student_profile_method: UpdateStudentProfileMethod,
+        update_student_profile_method: FromDishka[UpdateStudentProfileMethod],
     ) -> None:
         not_found_id = uuid.uuid4()
         command = UpdateStudentProfileCommand(

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -16,15 +17,18 @@ from teampass.team.methods.exceptions import (
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestInviteToTeamMethod:
+    @inject
     async def test_invite_success(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter setup
         student_inviter = await student_dao.create(
@@ -63,20 +67,22 @@ class TestInviteToTeamMethod:
         assert invitation_dto.team.id == inviter_refreshed.team_id
         assert invitation_dto.accepted_at is None
 
+    @inject
     async def test_inviter_not_found(
         self,
-        invite_to_team_method: InviteToTeamMethod,
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
     ) -> None:
         command = InviteToTeamCommand(user_id=uuid4(), invited_user_id=uuid4())
         with pytest.raises(UserNotFoundException) as exc_info:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == command.user_id
 
+    @inject
     async def test_inviter_not_in_team(
         self,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tit_not_in_team", first_name="A", last_name="B", patronymic=None
@@ -92,12 +98,13 @@ class TestInviteToTeamMethod:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == inviter.id
 
+    @inject
     async def test_inviter_not_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_captain = await student_dao.create(
             student_id="tit_not_cap_c", first_name="A", last_name="B", patronymic=None
@@ -128,12 +135,13 @@ class TestInviteToTeamMethod:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == member.id
 
+    @inject
     async def test_invited_user_not_found(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_inviter = await student_dao.create(
             student_id="tit_target_missing",
@@ -156,12 +164,13 @@ class TestInviteToTeamMethod:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == fake_invited_id
 
+    @inject
     async def test_invited_already_in_team(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_inviter = await student_dao.create(
             student_id="tit_already_in_team_i",
@@ -194,12 +203,13 @@ class TestInviteToTeamMethod:
             await invite_to_team_method(command)
         assert exc_info.value.user_id == invited.id
 
+    @inject
     async def test_invitation_already_exists(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_inviter = await student_dao.create(
             student_id="tit_dup_inviter", first_name="A", last_name="B", patronymic=None

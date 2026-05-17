@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr, ValidationError
 from teampass.user import (
     ChangeUserPasswordCommand,
@@ -11,15 +12,18 @@ from teampass.user import (
 )
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestChangePasswordMethod:
+    @inject
     async def test_change_password_success(
         self,
-        change_user_password_method: ChangeUserPasswordMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        change_user_password_method: FromDishka[ChangeUserPasswordMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="cp123",
@@ -46,9 +50,10 @@ class TestChangePasswordMethod:
         assert user_in_db is not None
         assert password_hasher.verify(user_in_db.password_hash, "newstrongpassword")
 
+    @inject
     async def test_change_password_user_not_found(
         self,
-        change_user_password_method: ChangeUserPasswordMethod,
+        change_user_password_method: FromDishka[ChangeUserPasswordMethod],
     ) -> None:
         not_found_id = uuid.uuid4()
         command = ChangeUserPasswordCommand(
@@ -62,12 +67,13 @@ class TestChangePasswordMethod:
 
         assert exc_info.value.user_id == not_found_id
 
+    @inject
     async def test_change_password_invalid_current_password(
         self,
-        change_user_password_method: ChangeUserPasswordMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        change_user_password_method: FromDishka[ChangeUserPasswordMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="cp124",

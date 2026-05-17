@@ -3,10 +3,7 @@ from collections.abc import AsyncIterator
 import pytest_asyncio
 from dishka import AsyncContainer, Provider, make_async_container
 from teampass.database import DatabaseProvider
-from teampass.media_storage import GetMediaMethod, MediaStorageProvider, SaveMediaMethod
-from teampass.media_storage.s3 import IS3Client
-from teampass.media_storage.settings import MediaStorageSettings
-from teampass.media_storage.storage import MediaDAO
+from teampass.media_storage import MediaStorageProvider
 from teampass.user import UserProvider
 from teampass.user.storage import StudentDAO, User, UserDAO
 
@@ -45,30 +42,3 @@ async def user(
         )
         await user_dao.commit()
     return user
-
-
-@pytest_asyncio.fixture
-async def s3_client(request_container: AsyncContainer) -> IS3Client:
-    return await request_container.get(IS3Client)
-
-
-@pytest_asyncio.fixture
-async def media_dao(request_container: AsyncContainer) -> MediaDAO:
-    return await request_container.get(MediaDAO)
-
-
-@pytest_asyncio.fixture
-async def get_media_method(request_container: AsyncContainer) -> GetMediaMethod:
-    return await request_container.get(GetMediaMethod)
-
-
-@pytest_asyncio.fixture
-async def save_media_method(request_container: AsyncContainer) -> SaveMediaMethod:
-    return await request_container.get(SaveMediaMethod)
-
-
-@pytest_asyncio.fixture
-async def media_storage_settings(
-    request_container: AsyncContainer,
-) -> MediaStorageSettings:
-    return await request_container.get(MediaStorageSettings)

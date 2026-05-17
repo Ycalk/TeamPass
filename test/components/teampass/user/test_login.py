@@ -1,5 +1,6 @@
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.user import (
     InvalidEmailOrPasswordException,
@@ -8,15 +9,18 @@ from teampass.user import (
 )
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestLoginMethod:
+    @inject
     async def test_login_success(
         self,
-        login_user_method: LoginUserMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        login_user_method: FromDishka[LoginUserMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="12345",
@@ -42,9 +46,10 @@ class TestLoginMethod:
         assert user_dto.student is not None
         assert user_dto.student.student_id == "12345"
 
+    @inject
     async def test_login_invalid_email(
         self,
-        login_user_method: LoginUserMethod,
+        login_user_method: FromDishka[LoginUserMethod],
     ) -> None:
         command = LoginUserCommand(
             email="notfound@example.com",
@@ -56,12 +61,13 @@ class TestLoginMethod:
 
         assert exc_info.value.email == "notfound@example.com"
 
+    @inject
     async def test_login_invalid_password(
         self,
-        login_user_method: LoginUserMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        login_user_method: FromDishka[LoginUserMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="12346",

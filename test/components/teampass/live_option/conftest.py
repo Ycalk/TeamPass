@@ -3,7 +3,6 @@ from typing import ClassVar
 
 import pytest_asyncio
 from dishka import AsyncContainer, Provider, make_async_container
-from sqlalchemy.ext.asyncio import AsyncSession
 from teampass.database import DatabaseProvider
 from teampass.live_option import LiveOptionBase, OptionDef
 
@@ -32,8 +31,3 @@ async def app_container(
     container = make_async_container(DatabaseProvider(), test_database_provider)
     yield container
     await container.close()
-
-
-@pytest_asyncio.fixture
-async def session(request_container: AsyncContainer) -> AsyncSession:
-    return await request_container.get(AsyncSession)

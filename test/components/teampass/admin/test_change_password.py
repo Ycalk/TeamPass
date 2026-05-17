@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.admin.methods.change_password import (
     AdminNotFoundException,
@@ -11,14 +12,17 @@ from teampass.admin.methods.change_password import (
 )
 from teampass.admin.storage import AdminDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestChangeAdminPasswordMethod:
+    @inject
     async def test_change_password_success(
         self,
-        change_admin_password_method: ChangeAdminPasswordMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        change_admin_password_method: FromDishka[ChangeAdminPasswordMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         admin = await admin_dao.create(
             username="changepassadmin",
@@ -40,9 +44,10 @@ class TestChangeAdminPasswordMethod:
         assert admin_in_db is not None
         assert password_hasher.verify(admin_in_db.password_hash, "newpassword123")
 
+    @inject
     async def test_change_password_admin_not_found(
         self,
-        change_admin_password_method: ChangeAdminPasswordMethod,
+        change_admin_password_method: FromDishka[ChangeAdminPasswordMethod],
     ) -> None:
         command = ChangeAdminPasswordCommand(
             admin_id=uuid4(),
@@ -55,11 +60,12 @@ class TestChangeAdminPasswordMethod:
 
         assert exc_info.value.admin_id == command.admin_id
 
+    @inject
     async def test_change_password_invalid_current_password(
         self,
-        change_admin_password_method: ChangeAdminPasswordMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        change_admin_password_method: FromDishka[ChangeAdminPasswordMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         admin = await admin_dao.create(
             username="invalidcurpassadmin",

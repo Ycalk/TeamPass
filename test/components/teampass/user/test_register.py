@@ -1,5 +1,6 @@
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.user import (
     EmailAlreadyExistsException,
@@ -11,15 +12,18 @@ from teampass.user import (
 )
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestRegisterMethod:
+    @inject
     async def test_register_success(
         self,
-        register_user_method: RegisterUserMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        register_user_method: FromDishka[RegisterUserMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         await student_dao.create(
             student_id="12345",
@@ -48,10 +52,11 @@ class TestRegisterMethod:
 
         assert password_hasher.verify(user_in_db.password_hash, "password123")
 
+    @inject
     async def test_register_success_without_patronymic(
         self,
-        register_user_method: RegisterUserMethod,
-        student_dao: StudentDAO,
+        register_user_method: FromDishka[RegisterUserMethod],
+        student_dao: FromDishka[StudentDAO],
     ) -> None:
         await student_dao.create(
             student_id="123456",
@@ -72,9 +77,10 @@ class TestRegisterMethod:
         user_dto = await register_user_method(command)
         assert user_dto is not None
 
+    @inject
     async def test_register_student_not_found(
         self,
-        register_user_method: RegisterUserMethod,
+        register_user_method: FromDishka[RegisterUserMethod],
     ) -> None:
         command = RegisterUserCommand(
             email="notfound@example.com",
@@ -90,10 +96,11 @@ class TestRegisterMethod:
 
         assert exc_info.value.student_id == "99999"
 
+    @inject
     async def test_register_invalid_student_data(
         self,
-        register_user_method: RegisterUserMethod,
-        student_dao: StudentDAO,
+        register_user_method: FromDishka[RegisterUserMethod],
+        student_dao: FromDishka[StudentDAO],
     ) -> None:
         await student_dao.create(
             student_id="12347",
@@ -116,10 +123,11 @@ class TestRegisterMethod:
 
         assert exc_info.value.student_id == "12347"
 
+    @inject
     async def test_register_student_already_registered(
         self,
-        register_user_method: RegisterUserMethod,
-        student_dao: StudentDAO,
+        register_user_method: FromDishka[RegisterUserMethod],
+        student_dao: FromDishka[StudentDAO],
     ) -> None:
         await student_dao.create(
             student_id="12348",
@@ -153,10 +161,11 @@ class TestRegisterMethod:
 
         assert exc_info.value.student_id == "12348"
 
+    @inject
     async def test_register_email_already_registered(
         self,
-        register_user_method: RegisterUserMethod,
-        student_dao: StudentDAO,
+        register_user_method: FromDishka[RegisterUserMethod],
+        student_dao: FromDishka[StudentDAO],
     ) -> None:
         await student_dao.create(
             student_id="12349",
