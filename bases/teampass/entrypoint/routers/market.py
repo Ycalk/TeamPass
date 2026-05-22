@@ -40,7 +40,7 @@ from teampass.market.storage import (
     MarketResponseDAO,
     MarketResponseLoadEnum,
 )
-from teampass.report.methods import GetReportCommand, GetReportMethod
+from teampass.report import GetReportCommand, GetReportMethod, ReportContent
 from teampass.transaction.methods import GetCurrentCycleMethod
 from teampass.user.storage import UserDAO, UserLoadEnum
 
@@ -479,7 +479,7 @@ async def get_deal_report(
     get_report: FromDishka[GetReportMethod],
     deal_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
-):
+) -> ReportContent:
     span = trace.get_current_span()
     span.set_attribute("user.id", str(user_id))
     span.set_attribute("deal.id", str(deal_id))
