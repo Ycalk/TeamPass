@@ -3,6 +3,7 @@ from .dto import ReportContent
 from .methods import (
     CreateReportCommand,
     CreateReportMethod,
+    CreateReportPayload,
     GetReportCommand,
     GetReportMethod,
     ReportNotFoundException,
@@ -10,6 +11,7 @@ from .methods import (
     UpdateReportMethod,
     UploadMediaCommand,
     UploadMediaMethod,
+    UploadMediaPayload,
 )
 
 __all__ = [
@@ -17,6 +19,7 @@ __all__ = [
     "ReportContent",
     "CreateReportCommand",
     "CreateReportMethod",
+    "CreateReportPayload",
     "GetReportCommand",
     "GetReportMethod",
     "ReportNotFoundException",
@@ -24,4 +27,5 @@ __all__ = [
     "UpdateReportMethod",
     "UploadMediaCommand",
     "UploadMediaMethod",
+    "UploadMediaPayload",
 ]

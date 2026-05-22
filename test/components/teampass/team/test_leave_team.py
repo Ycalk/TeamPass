@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -17,16 +18,19 @@ from teampass.team.storage import TeamDAO
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestLeaveTeamMethod:
+    @inject
     async def test_leave_success_member(
         self,
-        create_team_method: CreateTeamMethod,
-        leave_team_method: LeaveTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        team_dao: TeamDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        leave_team_method: FromDishka[LeaveTeamMethod],
+        team_dao: FromDishka[TeamDAO],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -64,13 +68,14 @@ class TestLeaveTeamMethod:
         team_refreshed = await team_dao.find_by_id(team.id)
         assert team_refreshed is not None
 
+    @inject
     async def test_leave_success_sole_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        leave_team_method: LeaveTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        team_dao: TeamDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        leave_team_method: FromDishka[LeaveTeamMethod],
+        team_dao: FromDishka[TeamDAO],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -96,19 +101,21 @@ class TestLeaveTeamMethod:
         team_refreshed = await team_dao.find_by_id(team.id)
         assert team_refreshed is not None
 
+    @inject
     async def test_leave_user_not_found(
         self,
-        leave_team_method: LeaveTeamMethod,
+        leave_team_method: FromDishka[LeaveTeamMethod],
     ) -> None:
         command = LeaveTeamCommand(user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await leave_team_method(command)
 
+    @inject
     async def test_leave_user_not_in_team(
         self,
-        leave_team_method: LeaveTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        leave_team_method: FromDishka[LeaveTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tlt_not_in_team", first_name="A", last_name="B", patronymic=None
@@ -123,12 +130,13 @@ class TestLeaveTeamMethod:
         with pytest.raises(UserNotInTeamException):
             await leave_team_method(command)
 
+    @inject
     async def test_leave_captain_cannot_leave_with_members(
         self,
-        create_team_method: CreateTeamMethod,
-        leave_team_method: LeaveTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        leave_team_method: FromDishka[LeaveTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -160,13 +168,14 @@ class TestLeaveTeamMethod:
         with pytest.raises(CaptainCannotLeaveTeamException):
             await leave_team_method(command)
 
+    @inject
     async def test_leave_team_transfers_disabled(
         self,
-        create_team_method: CreateTeamMethod,
-        leave_team_method: LeaveTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        policies: TeamPolicies,
+        create_team_method: FromDishka[CreateTeamMethod],
+        leave_team_method: FromDishka[LeaveTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        policies: FromDishka[TeamPolicies],
     ) -> None:
         student_cap = await student_dao.create(
             student_id="tlt_trans_dis", first_name="A", last_name="B", patronymic=None

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -15,15 +16,18 @@ from teampass.team.methods.exceptions import (
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestTransferCaptaincyMethod:
+    @inject
     async def test_transfer_success(
         self,
-        create_team_method: CreateTeamMethod,
-        transfer_captaincy_method: TransferCaptaincyMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -65,19 +69,21 @@ class TestTransferCaptaincyMethod:
         assert member_refreshed is not None
         assert member_refreshed.is_captain is True
 
+    @inject
     async def test_transfer_initiator_not_found(
         self,
-        transfer_captaincy_method: TransferCaptaincyMethod,
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
     ) -> None:
         command = TransferCaptaincyCommand(user_id=uuid4(), new_captain_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await transfer_captaincy_method(command)
 
+    @inject
     async def test_transfer_initiator_not_in_team(
         self,
-        transfer_captaincy_method: TransferCaptaincyMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="ttc_init_not_team",
@@ -95,12 +101,13 @@ class TestTransferCaptaincyMethod:
         with pytest.raises(UserNotInTeamException):
             await transfer_captaincy_method(command)
 
+    @inject
     async def test_transfer_initiator_not_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        transfer_captaincy_method: TransferCaptaincyMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -132,12 +139,13 @@ class TestTransferCaptaincyMethod:
         with pytest.raises(UserNotCaptainException):
             await transfer_captaincy_method(command)
 
+    @inject
     async def test_transfer_new_captain_not_found(
         self,
-        create_team_method: CreateTeamMethod,
-        transfer_captaincy_method: TransferCaptaincyMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="ttc_new_missing", first_name="A", last_name="B", patronymic=None
@@ -153,12 +161,13 @@ class TestTransferCaptaincyMethod:
         with pytest.raises(UserNotFoundException):
             await transfer_captaincy_method(command)
 
+    @inject
     async def test_transfer_new_captain_not_in_same_team(
         self,
-        create_team_method: CreateTeamMethod,
-        transfer_captaincy_method: TransferCaptaincyMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        transfer_captaincy_method: FromDishka[TransferCaptaincyMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_cap = await student_dao.create(
             student_id="ttc_diff_cap", first_name="A", last_name="B", patronymic=None

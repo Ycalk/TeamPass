@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.user import (
     ChangeUserEmailCommand,
@@ -12,15 +13,18 @@ from teampass.user import (
 )
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestChangeEmailMethod:
+    @inject
     async def test_change_email_success(
         self,
-        change_user_email_method: ChangeUserEmailMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        change_user_email_method: FromDishka[ChangeUserEmailMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="ce123",
@@ -48,9 +52,10 @@ class TestChangeEmailMethod:
         assert user_in_db is not None
         assert user_in_db.email == "new@example.com"
 
+    @inject
     async def test_change_email_user_not_found(
         self,
-        change_user_email_method: ChangeUserEmailMethod,
+        change_user_email_method: FromDishka[ChangeUserEmailMethod],
     ) -> None:
         not_found_id = uuid.uuid4()
         command = ChangeUserEmailCommand(
@@ -64,12 +69,13 @@ class TestChangeEmailMethod:
 
         assert exc_info.value.user_id == not_found_id
 
+    @inject
     async def test_change_email_invalid_password(
         self,
-        change_user_email_method: ChangeUserEmailMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        change_user_email_method: FromDishka[ChangeUserEmailMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student = await student_dao.create(
             student_id="ce124",
@@ -94,12 +100,13 @@ class TestChangeEmailMethod:
 
         assert exc_info.value.user_id == user.id
 
+    @inject
     async def test_change_email_already_exists(
         self,
-        change_user_email_method: ChangeUserEmailMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        password_hasher: PasswordHasher,
+        change_user_email_method: FromDishka[ChangeUserEmailMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         student1 = await student_dao.create(
             student_id="ce125",

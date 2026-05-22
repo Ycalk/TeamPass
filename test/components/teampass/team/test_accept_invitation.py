@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     AcceptInvitationCommand,
     AcceptInvitationMethod,
@@ -18,16 +19,19 @@ from teampass.team.methods.exceptions import (
 from teampass.team.policies import TeamPolicies
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestAcceptInvitationMethod:
+    @inject
     async def test_accept_invitation_success(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter setup
         student_inviter = await student_dao.create(
@@ -72,11 +76,12 @@ class TestAcceptInvitationMethod:
         assert invited_refreshed is not None
         assert invited_refreshed.team_id == accepted_dto.team.id
 
+    @inject
     async def test_accept_invitation_not_found(
         self,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tai_not_found", first_name="A", last_name="B", patronymic=None
@@ -94,13 +99,14 @@ class TestAcceptInvitationMethod:
             await accept_invitation_method(command)
         assert exc_info.value.invitation_id == fake_id
 
+    @inject
     async def test_accept_someone_elses_invitation(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter
         student_inviter = await student_dao.create(
@@ -149,13 +155,14 @@ class TestAcceptInvitationMethod:
         with pytest.raises(InvitationNotFoundException):
             await accept_invitation_method(command)
 
+    @inject
     async def test_accept_invitation_already_in_team(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Inviter
         student_inviter = await student_dao.create(
@@ -197,14 +204,15 @@ class TestAcceptInvitationMethod:
         with pytest.raises(UserAlreadyInTeamException):
             await accept_invitation_method(command)
 
+    @inject
     async def test_accept_invitation_students_limit_reached(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        policies: TeamPolicies,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        policies: FromDishka[TeamPolicies],
     ) -> None:
         policies.max_users = 1
         await policies.save()
@@ -245,14 +253,15 @@ class TestAcceptInvitationMethod:
         with pytest.raises(StudentsLimitReachedException):
             await accept_invitation_method(command)
 
+    @inject
     async def test_accept_invitation_transfers_disabled(
         self,
-        create_team_method: CreateTeamMethod,
-        invite_to_team_method: InviteToTeamMethod,
-        accept_invitation_method: AcceptInvitationMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        policies: TeamPolicies,
+        create_team_method: FromDishka[CreateTeamMethod],
+        invite_to_team_method: FromDishka[InviteToTeamMethod],
+        accept_invitation_method: FromDishka[AcceptInvitationMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        policies: FromDishka[TeamPolicies],
     ) -> None:
         student_inviter = await student_dao.create(
             student_id="tai_trans_dis_inviter",

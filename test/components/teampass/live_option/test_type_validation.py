@@ -1,16 +1,22 @@
 from typing import ClassVar
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 from teampass.live_option import LiveOptionBase, OptionDef
 from teampass.live_option.core import (
     _LiveOptionStorage,  # pyright: ignore[reportPrivateUsage]
 )
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestLiveOptionTypeValidation:
-    async def test_sync_raises_on_type_mismatch(self, session: AsyncSession) -> None:
+    @inject
+    async def test_sync_raises_on_type_mismatch(
+        self, session: FromDishka[AsyncSession]
+    ) -> None:
         storage = _LiveOptionStorage(
             key="type_mismatch_option",
             value={"score": "not_an_int"},

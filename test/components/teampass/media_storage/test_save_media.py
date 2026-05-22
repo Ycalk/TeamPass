@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.media_storage.methods.exceptions import MediaTooLargeException
 from teampass.media_storage.methods.save_media import SaveMediaCommand, SaveMediaMethod
 from teampass.media_storage.s3 import IS3Client
@@ -9,14 +10,17 @@ from teampass.media_storage.storage import MediaDAO
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import User
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestSaveMedia:
+    @inject
     async def test_save_media_success(
         self,
-        save_media_method: SaveMediaMethod,
-        media_dao: MediaDAO,
-        s3_client: IS3Client,
+        save_media_method: FromDishka[SaveMediaMethod],
+        media_dao: FromDishka[MediaDAO],
+        s3_client: FromDishka[IS3Client],
         test_png: bytes,
         user: User,
     ) -> None:
@@ -36,11 +40,12 @@ class TestSaveMedia:
         url = await s3_client.generate_presigned_url(db_media.file_name)
         assert url.startswith("http")
 
+    @inject
     async def test_save_media_unknown_type(
         self,
-        save_media_method: SaveMediaMethod,
-        media_dao: MediaDAO,
-        s3_client: IS3Client,
+        save_media_method: FromDishka[SaveMediaMethod],
+        media_dao: FromDishka[MediaDAO],
+        s3_client: FromDishka[IS3Client],
         user: User,
     ) -> None:
         data = b"hello random text"
@@ -57,10 +62,11 @@ class TestSaveMedia:
         url = await s3_client.generate_presigned_url(db_media.file_name)
         assert url.startswith("http")
 
+    @inject
     async def test_save_media_too_large(
         self,
-        save_media_method: SaveMediaMethod,
-        media_storage_settings: MediaStorageSettings,
+        save_media_method: FromDishka[SaveMediaMethod],
+        media_storage_settings: FromDishka[MediaStorageSettings],
         user: User,
     ) -> None:
         large_data = b"0" * (media_storage_settings.max_file_size_bytes + 1)
@@ -69,9 +75,10 @@ class TestSaveMedia:
         with pytest.raises(MediaTooLargeException):
             await save_media_method(command)
 
+    @inject
     async def test_save_media_user_not_found(
         self,
-        save_media_method: SaveMediaMethod,
+        save_media_method: FromDishka[SaveMediaMethod],
         test_png: bytes,
     ) -> None:
         command = SaveMediaCommand(media_data=test_png, user_id=uuid.uuid4())

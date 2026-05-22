@@ -2,6 +2,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.report import (
     CreateReportCommand,
     CreateReportMethod,
@@ -19,6 +20,8 @@ from teampass.report.dto.blocks.image import ImageData, ImageFile, ImageFileWith
 from teampass.report.storage import ReportDAO
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import User
+
+from development.pytest_inject import inject
 
 
 def _make_content(*blocks: dict[str, Any]) -> ReportContent:
@@ -145,10 +148,11 @@ def _checklist_block() -> dict[str, Any]:
 # ──────────────────────────────────────────────
 @pytest.mark.asyncio
 class TestCreateReportMethod:
+    @inject
     async def test_create_report_success(
         self,
-        create_report_method: CreateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         content = _make_content(_header_block(), _paragraph_block())
@@ -162,10 +166,11 @@ class TestCreateReportMethod:
         assert report.owner_id == user.id
         assert report.content is not None
 
+    @inject
     async def test_create_report_empty_blocks(
         self,
-        create_report_method: CreateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         content = _make_content()
@@ -178,9 +183,10 @@ class TestCreateReportMethod:
         parsed = ReportContent.model_validate(report.content)
         assert parsed.blocks == []
 
+    @inject
     async def test_create_report_user_not_found(
         self,
-        create_report_method: CreateReportMethod,
+        create_report_method: FromDishka[CreateReportMethod],
     ) -> None:
         fake_id = uuid4()
         content = _make_content(_header_block())
@@ -191,10 +197,11 @@ class TestCreateReportMethod:
 
         assert exc_info.value.user_id == fake_id
 
+    @inject
     async def test_create_report_with_image_strips_url(
         self,
-        create_report_method: CreateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         """Image URLs should be cleaned on create (via UpdateReportMethod)."""
@@ -212,10 +219,11 @@ class TestCreateReportMethod:
         # URL should be stripped during save
         assert isinstance(image_data.file, ImageFile)
 
+    @inject
     async def test_create_report_with_all_block_types(
         self,
-        create_report_method: CreateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         content = _make_content(
@@ -244,10 +252,11 @@ class TestCreateReportMethod:
 # ──────────────────────────────────────────────
 @pytest.mark.asyncio
 class TestGetReportMethod:
+    @inject
     async def test_get_report_success(
         self,
-        create_report_method: CreateReportMethod,
-        get_report_method: GetReportMethod,
+        create_report_method: FromDishka[CreateReportMethod],
+        get_report_method: FromDishka[GetReportMethod],
         user: User,
     ) -> None:
         content = _make_content(_header_block("Get Test"), _paragraph_block("Body"))
@@ -261,9 +270,10 @@ class TestGetReportMethod:
         assert len(result.blocks) == 2
         assert result.version == "2.30.6"
 
+    @inject
     async def test_get_report_not_found(
         self,
-        get_report_method: GetReportMethod,
+        get_report_method: FromDishka[GetReportMethod],
     ) -> None:
         fake_id = uuid4()
 
@@ -272,10 +282,11 @@ class TestGetReportMethod:
 
         assert exc_info.value.report_id == fake_id
 
+    @inject
     async def test_get_report_preserves_content(
         self,
-        create_report_method: CreateReportMethod,
-        get_report_method: GetReportMethod,
+        create_report_method: FromDishka[CreateReportMethod],
+        get_report_method: FromDishka[GetReportMethod],
         user: User,
     ) -> None:
         content = _make_content(
@@ -304,11 +315,12 @@ class TestGetReportMethod:
         assert result.blocks[3].data.caption == "Sage"
         assert result.blocks[3].data.alignment == "center"
 
+    @inject
     async def test_get_report_with_image_adds_url(
         self,
-        upload_media_method: UploadMediaMethod,
-        create_report_method: CreateReportMethod,
-        get_report_method: GetReportMethod,
+        upload_media_method: FromDishka[UploadMediaMethod],
+        create_report_method: FromDishka[CreateReportMethod],
+        get_report_method: FromDishka[GetReportMethod],
         test_png: bytes,
         user: User,
     ) -> None:
@@ -336,11 +348,12 @@ class TestGetReportMethod:
 # ──────────────────────────────────────────────
 @pytest.mark.asyncio
 class TestUpdateReportMethod:
+    @inject
     async def test_update_report_success(
         self,
-        create_report_method: CreateReportMethod,
-        update_report_method: UpdateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        update_report_method: FromDishka[UpdateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         report_id = await create_report_method(
@@ -364,9 +377,10 @@ class TestUpdateReportMethod:
         assert isinstance(parsed.blocks[0].data, HeaderData)
         assert parsed.blocks[0].data.text == "After"
 
+    @inject
     async def test_update_report_not_found(
         self,
-        update_report_method: UpdateReportMethod,
+        update_report_method: FromDishka[UpdateReportMethod],
     ) -> None:
         fake_id = uuid4()
 
@@ -380,11 +394,12 @@ class TestUpdateReportMethod:
 
         assert exc_info.value.report_id == fake_id
 
+    @inject
     async def test_update_report_clears_to_empty(
         self,
-        create_report_method: CreateReportMethod,
-        update_report_method: UpdateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        update_report_method: FromDishka[UpdateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         report_id = await create_report_method(
@@ -403,11 +418,12 @@ class TestUpdateReportMethod:
         parsed = ReportContent.model_validate(report.content)
         assert parsed.blocks == []
 
+    @inject
     async def test_update_report_strips_image_urls(
         self,
-        create_report_method: CreateReportMethod,
-        update_report_method: UpdateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        update_report_method: FromDishka[UpdateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         report_id = await create_report_method(
@@ -430,11 +446,12 @@ class TestUpdateReportMethod:
         assert isinstance(image_data, ImageData)
         assert isinstance(image_data.file, ImageFile)
 
+    @inject
     async def test_update_report_multiple_times(
         self,
-        create_report_method: CreateReportMethod,
-        update_report_method: UpdateReportMethod,
-        report_dao: ReportDAO,
+        create_report_method: FromDishka[CreateReportMethod],
+        update_report_method: FromDishka[UpdateReportMethod],
+        report_dao: FromDishka[ReportDAO],
         user: User,
     ) -> None:
         report_id = await create_report_method(
@@ -464,9 +481,10 @@ class TestUpdateReportMethod:
 # ──────────────────────────────────────────────
 @pytest.mark.asyncio
 class TestUploadMediaMethod:
+    @inject
     async def test_upload_media_success(
         self,
-        upload_media_method: UploadMediaMethod,
+        upload_media_method: FromDishka[UploadMediaMethod],
         test_png: bytes,
         user: User,
     ) -> None:
@@ -477,9 +495,10 @@ class TestUploadMediaMethod:
         assert result.id is not None
         assert result.url.startswith("http")
 
+    @inject
     async def test_upload_media_returns_image_file_with_url(
         self,
-        upload_media_method: UploadMediaMethod,
+        upload_media_method: FromDishka[UploadMediaMethod],
         test_png: bytes,
         user: User,
     ) -> None:
@@ -491,9 +510,10 @@ class TestUploadMediaMethod:
         assert result.url is not None
         assert len(result.url) > 0
 
+    @inject
     async def test_upload_media_with_unknown_type(
         self,
-        upload_media_method: UploadMediaMethod,
+        upload_media_method: FromDishka[UploadMediaMethod],
         user: User,
     ) -> None:
         data = b"not a real image"

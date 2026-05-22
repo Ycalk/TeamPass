@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -18,15 +19,18 @@ from teampass.team.policies import TeamPolicies
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestRemoveTeamMemberMethod:
+    @inject
     async def test_remove_success(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -64,19 +68,21 @@ class TestRemoveTeamMemberMethod:
         assert member_refreshed is not None
         assert member_refreshed.team_id is None
 
+    @inject
     async def test_remove_initiator_not_found(
         self,
-        remove_team_member_method: RemoveTeamMemberMethod,
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
     ) -> None:
         command = RemoveTeamMemberCommand(user_id=uuid4(), target_user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_initiator_not_in_team(
         self,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="trm_init_not_team",
@@ -94,12 +100,13 @@ class TestRemoveTeamMemberMethod:
         with pytest.raises(UserNotInTeamException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_initiator_not_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain setup
         student_cap = await student_dao.create(
@@ -131,12 +138,13 @@ class TestRemoveTeamMemberMethod:
         with pytest.raises(UserNotCaptainException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_captain_removes_self(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="trm_self", first_name="A", last_name="B", patronymic=None
@@ -152,12 +160,13 @@ class TestRemoveTeamMemberMethod:
         with pytest.raises(CaptainCannotRemoveSelfException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_target_not_found(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="trm_tgt_missing", first_name="A", last_name="B", patronymic=None
@@ -173,12 +182,13 @@ class TestRemoveTeamMemberMethod:
         with pytest.raises(UserNotFoundException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_target_not_in_same_team(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_cap = await student_dao.create(
             student_id="trm_diff_cap", first_name="A", last_name="B", patronymic=None
@@ -204,13 +214,14 @@ class TestRemoveTeamMemberMethod:
         with pytest.raises(UsersNotInSameTeamException):
             await remove_team_member_method(command)
 
+    @inject
     async def test_remove_team_transfers_disabled(
         self,
-        create_team_method: CreateTeamMethod,
-        remove_team_member_method: RemoveTeamMemberMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        policies: TeamPolicies,
+        create_team_method: FromDishka[CreateTeamMethod],
+        remove_team_member_method: FromDishka[RemoveTeamMemberMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        policies: FromDishka[TeamPolicies],
     ) -> None:
         student_cap = await student_dao.create(
             student_id="trm_trans_dis_c", first_name="A", last_name="B", patronymic=None

@@ -1,13 +1,17 @@
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 from teampass.live_option import OptionDef
+
+from development.pytest_inject import inject
 
 from .conftest import SampleOption
 
 
 @pytest.mark.asyncio
 class TestLiveOptionDescriptor:
-    async def test_set_and_get(self, session: AsyncSession) -> None:
+    @inject
+    async def test_set_and_get(self, session: FromDishka[AsyncSession]) -> None:
         option = SampleOption(session)
 
         option.greeting = "Привет"

@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, override
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, func, text
+from sqlalchemy import ForeignKey, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 from sqlalchemy.orm.interfaces import ORMOption
@@ -75,6 +75,38 @@ class MarketDealDAO(BaseDAO[MarketDeal, UUID, MarketDealLoadEnum]):
         )
         await self.save(obj)
         return obj
+
+    async def find_by_response_id(
+        self,
+        market_response_id: UUID,
+        includes: list[MarketDealLoadEnum] | None = None,
+    ) -> MarketDeal | None:
+        stmt = select(MarketDeal).where(
+            MarketDeal.market_response_id == market_response_id
+        )
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_by_listing_id(
+        self,
+        market_listing_id: UUID,
+        includes: list[MarketDealLoadEnum] | None = None,
+    ) -> MarketDeal | None:
+        from .market_response import MarketResponse
+
+        stmt = (
+            select(MarketDeal)
+            .join(MarketResponse, MarketResponse.id == MarketDeal.market_response_id)
+            .where(MarketResponse.market_listing_id == market_listing_id)
+        )
+        if includes is not None:
+            stmt = stmt.options(*self.get_options(includes))
+            stmt = stmt.execution_options(populate_existing=True)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class MarketDealDAOFactory(BaseDAOFactory[MarketDealDAO]):

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -14,15 +15,18 @@ from teampass.team.methods.exceptions import (
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestRenameTeamMethod:
+    @inject
     async def test_rename_success(
         self,
-        create_team_method: CreateTeamMethod,
-        rename_team_method: RenameTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        rename_team_method: FromDishka[RenameTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student_cap = await student_dao.create(
             student_id="trt_succ_cap", first_name="A", last_name="B", patronymic=None
@@ -42,19 +46,21 @@ class TestRenameTeamMethod:
         assert team_dto.id == team.id
         assert team_dto.name == "New Name"
 
+    @inject
     async def test_rename_initiator_not_found(
         self,
-        rename_team_method: RenameTeamMethod,
+        rename_team_method: FromDishka[RenameTeamMethod],
     ) -> None:
         command = RenameTeamCommand(name="New Name", user_id=uuid4())
         with pytest.raises(UserNotFoundException):
             await rename_team_method(command)
 
+    @inject
     async def test_rename_initiator_not_in_team(
         self,
-        rename_team_method: RenameTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        rename_team_method: FromDishka[RenameTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="trt_not_in_team", first_name="A", last_name="B", patronymic=None
@@ -69,12 +75,13 @@ class TestRenameTeamMethod:
         with pytest.raises(UserNotInTeamException):
             await rename_team_method(command)
 
+    @inject
     async def test_rename_initiator_not_captain(
         self,
-        create_team_method: CreateTeamMethod,
-        rename_team_method: RenameTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        rename_team_method: FromDishka[RenameTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         # Captain
         student_cap = await student_dao.create(

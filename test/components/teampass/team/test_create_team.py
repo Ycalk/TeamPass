@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from dishka.entities.depends_marker import FromDishka
 from teampass.team.methods import (
     CreateTeamCommand,
     CreateTeamMethod,
@@ -13,14 +14,17 @@ from teampass.team.policies import TeamPolicies
 from teampass.user.methods.exceptions import UserNotFoundException
 from teampass.user.storage import StudentDAO, UserDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestCreateTeamMethod:
+    @inject
     async def test_create_team_success(
         self,
-        create_team_method: CreateTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tct_success",
@@ -49,9 +53,10 @@ class TestCreateTeamMethod:
         assert updated_user.team_id == team_dto.id
         assert updated_user.is_captain is True
 
+    @inject
     async def test_create_team_user_not_found(
         self,
-        create_team_method: CreateTeamMethod,
+        create_team_method: FromDishka[CreateTeamMethod],
     ) -> None:
         fake_id = uuid4()
         command = CreateTeamCommand(name="Ghost Team", user_id=fake_id)
@@ -61,11 +66,12 @@ class TestCreateTeamMethod:
 
         assert exc_info.value.user_id == fake_id
 
+    @inject
     async def test_create_team_user_already_in_team(
         self,
-        create_team_method: CreateTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
+        create_team_method: FromDishka[CreateTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
     ) -> None:
         student = await student_dao.create(
             student_id="tct_already",
@@ -88,12 +94,13 @@ class TestCreateTeamMethod:
 
         assert exc_info.value.user_id == user.id
 
+    @inject
     async def test_create_team_transfers_disabled(
         self,
-        create_team_method: CreateTeamMethod,
-        student_dao: StudentDAO,
-        user_dao: UserDAO,
-        policies: TeamPolicies,
+        create_team_method: FromDishka[CreateTeamMethod],
+        student_dao: FromDishka[StudentDAO],
+        user_dao: FromDishka[UserDAO],
+        policies: FromDishka[TeamPolicies],
     ) -> None:
         policies.allow_team_transfers = False
         await policies.save()

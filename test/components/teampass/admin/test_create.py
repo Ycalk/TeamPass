@@ -1,5 +1,6 @@
 import pytest
 from argon2 import PasswordHasher
+from dishka.entities.depends_marker import FromDishka
 from pydantic import SecretStr
 from teampass.admin.methods.create import (
     AdminAlreadyExistsException,
@@ -8,14 +9,17 @@ from teampass.admin.methods.create import (
 )
 from teampass.admin.storage import AdminDAO
 
+from development.pytest_inject import inject
+
 
 @pytest.mark.asyncio
 class TestCreateAdminMethod:
+    @inject
     async def test_create_admin_success(
         self,
-        create_admin_method: CreateAdminMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        create_admin_method: FromDishka[CreateAdminMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         command = CreateAdminCommand(
             username="admin1",
@@ -33,11 +37,12 @@ class TestCreateAdminMethod:
 
         assert password_hasher.verify(admin_in_db.password_hash, "securepassword123")
 
+    @inject
     async def test_create_admin_already_exists(
         self,
-        create_admin_method: CreateAdminMethod,
-        admin_dao: AdminDAO,
-        password_hasher: PasswordHasher,
+        create_admin_method: FromDishka[CreateAdminMethod],
+        admin_dao: FromDishka[AdminDAO],
+        password_hasher: FromDishka[PasswordHasher],
     ) -> None:
         await admin_dao.create(
             username="existingadmin",
