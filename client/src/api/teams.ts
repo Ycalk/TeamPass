@@ -7,42 +7,42 @@ const api = apiClient;
 //
 
 export const getMyTeam = async () => {
-  return api.get("/teams/me", {
-    validateStatus: (status) =>
-      status === 200 || status === 404,
-  });
+    return api.get("/teams/me", {
+        validateStatus: (status) =>
+            status === 200 || status === 404,
+    });
 };
 
 export const createTeam = async (name: string) => {
-  return api.post("/teams", {
-    name,
-  });
+    return api.post("/teams", {
+        name,
+    });
 };
 
 export const changeTeamName = async (name: string) => {
-  return api.patch("/teams/me/name", {
-    name,
-  });
+    return api.patch("/teams/me/name", {
+        name,
+    });
 };
 
 export const transferCaptaincy = async (
-  userId: string
+    userId: string
 ) => {
-  return api.patch("/teams/me/captaincy", {
-    new_captain_id: userId,
-  });
+    return api.patch("/teams/me/captaincy", {
+        new_captain_id: userId,
+    });
 };
 
 export const removeMember = async (
-  memberId: string
+    memberId: string
 ) => {
-  return api.delete(
-    `/teams/me/members/${memberId}`
-  );
+    return api.delete(
+        `/teams/me/members/${memberId}`
+    );
 };
 
 export const leaveTeam = async () => {
-  return api.delete("/teams/me/members/me");
+    return api.delete("/teams/me/members/me");
 };
 
 //
@@ -50,43 +50,43 @@ export const leaveTeam = async () => {
 //
 
 export const getUserInvitations = async () => {
-  return api.get("/teams/invitations");
+    return api.get("/teams/invitations");
 };
 
 export const acceptInvitation = async (
-  invitationId: string
+    invitationId: string
 ) => {
-  return api.post(
-    `/teams/invitations/${invitationId}`
-  );
+    return api.post(
+        `/teams/invitations/${invitationId}`
+    );
 };
 
 export const declineInvitation = async (
-  invitationId: string
+    invitationId: string
 ) => {
-  return api.delete(
-    `/teams/invitations/${invitationId}`
-  );
+    return api.delete(
+        `/teams/invitations/${invitationId}`
+    );
 };
 
 export const getTeamInvitations = async () => {
-  return api.get("/teams/me/invitations");
+    return api.get("/teams/me/invitations");
 };
 
 export const sendInvitation = async (
-  userId: string
+    userId: string
 ) => {
-  return api.post("/teams/me/invitations", {
-    invited_user_id: userId,
-  });
+    return api.post("/teams/me/invitations", {
+        invited_user_id: userId,
+    });
 };
 
 export const deleteTeamInvitation = async (
-  invitationId: string
+    invitationId: string
 ) => {
-  return api.delete(
-    `/teams/invitations/${invitationId}`
-  );
+    return api.delete(
+        `/teams/invitations/${invitationId}`
+    );
 };
 
 //
@@ -94,15 +94,15 @@ export const deleteTeamInvitation = async (
 //
 
 export const getMe = async () => {
-  return api.get("/users/me");
+    return api.get("/users/me");
 };
 
 export const searchUsers = async (
-  query: string
+    query: string
 ) => {
-  return api.get("/users/search", {
-    params: {
-      query,
-    },
-  });
+    return api.get("/users/search", {
+        params: {
+            query,
+        },
+    });
 };
