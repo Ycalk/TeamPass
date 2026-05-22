@@ -17,7 +17,7 @@ from teampass.report import ReportContent
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 def _make_content() -> ReportContent:
@@ -41,7 +41,7 @@ class TestUpdateDealReportMethod:
         create_deal_report_method: FromDishka[CreateDealReportMethod],
         update_deal_report_method: FromDishka[UpdateDealReportMethod],
         market_deal_dao: FromDishka[MarketDealDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TU1")
         user1 = await factory.create_user("uu1@t.com", "uu1", team1.id)

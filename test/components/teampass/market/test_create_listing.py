@@ -14,7 +14,7 @@ from teampass.user.methods import UserNotFoundException
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ class TestCreateListingMethod:
         self,
         create_listing_method: FromDishka[CreateListingMethod],
         market_listing_dao: FromDishka[MarketListingDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team = await factory.create_team("Test Team")
         user = await factory.create_user("l1@test.com", "l1", team.id)
@@ -57,7 +57,7 @@ class TestCreateListingMethod:
     async def test_user_not_in_team(
         self,
         create_listing_method: FromDishka[CreateListingMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         user = await factory.create_user("l2@test.com", "l2")
         command = CreateListingCommand(
@@ -70,7 +70,7 @@ class TestCreateListingMethod:
     async def test_listings_limit_reached(
         self,
         create_listing_method: FromDishka[CreateListingMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team = await factory.create_team("Limit Team")
         user = await factory.create_user("limit@test.com", "limit", team.id)

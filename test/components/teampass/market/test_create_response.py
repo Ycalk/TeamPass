@@ -14,7 +14,7 @@ from teampass.market.storage import MarketResponseDAO, MarketResponseStatus
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 @pytest.mark.asyncio
@@ -25,7 +25,7 @@ class TestCreateResponseMethod:
         create_listing_method: FromDishka[CreateListingMethod],
         create_response_method: FromDishka[CreateResponseMethod],
         market_response_dao: FromDishka[MarketResponseDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("Listers")
         user1 = await factory.create_user("lister@test.com", "lister", team1.id)
@@ -54,7 +54,7 @@ class TestCreateResponseMethod:
     async def test_listing_not_found(
         self,
         create_response_method: FromDishka[CreateResponseMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team = await factory.create_team("T")
         user = await factory.create_user("u@t.com", "ut", team.id)

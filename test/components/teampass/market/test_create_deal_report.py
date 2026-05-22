@@ -16,7 +16,7 @@ from teampass.report import ReportContent
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 def _make_content() -> ReportContent:
@@ -39,7 +39,7 @@ class TestCreateDealReportMethod:
         create_deal_method: FromDishka[CreateDealMethod],
         create_deal_report_method: FromDishka[CreateDealReportMethod],
         market_deal_dao: FromDishka[MarketDealDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TR1")
         user1 = await factory.create_user("ur1@t.com", "ur1", team1.id)
@@ -74,7 +74,7 @@ class TestCreateDealReportMethod:
         create_response_method: FromDishka[CreateResponseMethod],
         create_deal_method: FromDishka[CreateDealMethod],
         create_deal_report_method: FromDishka[CreateDealReportMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TR3")
         user1 = await factory.create_user("ur3@t.com", "ur3", team1.id)

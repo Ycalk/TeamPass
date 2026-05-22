@@ -35,7 +35,7 @@ async def app_container(
     await container.close()
 
 
-class TestFactory:
+class UtilsForTesting:
     def __init__(self, request_container: AsyncContainer) -> None:
         self.request_container: AsyncContainer = request_container
 
@@ -88,5 +88,5 @@ class TestFactory:
 
 
 @pytest.fixture
-def factory(request_container: AsyncContainer) -> TestFactory:
-    return TestFactory(request_container)
+def factory(request_container: AsyncContainer) -> UtilsForTesting:
+    return UtilsForTesting(request_container)

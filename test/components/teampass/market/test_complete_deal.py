@@ -16,7 +16,7 @@ from teampass.transaction.storage import PointTransactionDAO, PointType
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ class TestCompleteDealMethod:
         complete_deal_method: FromDishka[CompleteDealMethod],
         market_deal_dao: FromDishka[MarketDealDAO],
         point_transaction_dao: FromDishka[PointTransactionDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TC1")
         user1 = await factory.create_user("uc1@t.com", "uc1", team1.id)
@@ -68,7 +68,7 @@ class TestCompleteDealMethod:
         create_response_method: FromDishka[CreateResponseMethod],
         create_deal_method: FromDishka[CreateDealMethod],
         complete_deal_method: FromDishka[CompleteDealMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TC3")
         user1 = await factory.create_user("uc3@t.com", "uc3", team1.id)

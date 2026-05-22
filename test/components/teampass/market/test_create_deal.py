@@ -19,7 +19,7 @@ from teampass.market.storage import (
 
 from development.pytest_inject import inject
 
-from .conftest import TestFactory
+from .conftest import UtilsForTesting
 
 
 @pytest.mark.asyncio
@@ -32,7 +32,7 @@ class TestCreateDealMethod:
         create_deal_method: FromDishka[CreateDealMethod],
         market_response_dao: FromDishka[MarketResponseDAO],
         market_deal_dao: FromDishka[MarketDealDAO],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("T1")
         user1 = await factory.create_user("u1@t.com", "u1", team1.id)
@@ -74,7 +74,7 @@ class TestCreateDealMethod:
         create_listing_method: FromDishka[CreateListingMethod],
         create_response_method: FromDishka[CreateResponseMethod],
         create_deal_method: FromDishka[CreateDealMethod],
-        factory: TestFactory,
+        factory: UtilsForTesting,
     ) -> None:
         team1 = await factory.create_team("TF1")
         user1 = await factory.create_user("uf1@t.com", "uf1", team1.id)
