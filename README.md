@@ -1,8 +1,206 @@
-# A Python Polylith repo
+# TeamPass
 
-## Docs
-The official Polylith documentation:
-[high-level documentation](https://polylith.gitbook.io/polylith)
+Платформа для организации командной и учебной деятельности студентов-первокурсников в период экзаменационной сессии. TeamPass предоставляет инфраструктуру для формирования команд, участия в соревновательных челленджах и обмена знаниями через встроенную биржу услуг.
 
-A Python implementation of the Polylith tool:
-[python-polylith](https://github.com/DavidVujic/python-polylith)
+## Функциональные возможности
+
+- **Управление командами** — создание команд, приглашение участников, передача капитанства, ролевая модель (капитан / участник).
+- **Биржа знаний (Market)** — студенты размещают объявления о готовности помочь (спрос/предложение), откликаются на заявки других команд, заключают сделки и отчитываются о выполнении. Полный цикл: листинг → отклик → сделка → отчёт.
+- **Система баллов и игровых циклов** — начисление баллов за активность в рамках периодов (game cycles), снэпшоты рейтинга команд и студентов в конце каждого цикла.
+- **Профили студентов** — анкета с указанием сильных/слабых сторон, контактов (Telegram, VK, телефон).
+- **Поиск студентов** — полнотекстовый триграммный поиск по ФИО и ID.
+- **Панель администратора** — управление пользователями, командами, студентами, импорт студентов из CSV/XLSX.
+- **Аутентификация и авторизация** — JWT (access + refresh tokens), argon2-хэширование паролей, httpOnly cookie для refresh-токена.
+- **Загрузка медиафайлов** — S3-совместимое объектное хранилище (SeaweedFS).
+
+## Технологический стек
+
+### Бэкенд
+
+| Компонент | Технология |
+|-----------|-----------|
+| Язык | Python 3.12+ |
+| Веб-фреймворк | FastAPI 0.135 |
+| Архитектура | Polylith (монорепозиторий: bases + components) |
+| ORM | SQLAlchemy 2.0 (async) |
+| Миграции | Alembic 1.18 |
+| База данных | PostgreSQL 17 (asyncpg) |
+| DI-контейнер | Dishka 1.9 |
+| Хэширование паролей | argon2-cffi |
+| JWT | PyJWT |
+| Админ-панель | Starlette + SQLAdmin |
+| Очереди | RabbitMQ / aio-pika |
+| S3-клиент | aioboto3 |
+| Трассировка | OpenTelemetry (OTLP) → Jaeger → OpenSearch |
+| Логирование | Structlog |
+| Валидация HTML | nh3 |
+| Определение MIME | filetype |
+
+### Фронтенд (веб-клиент)
+
+| Компонент | Технология |
+|-----------|-----------|
+| Язык | TypeScript 6.0 |
+| Фреймворк | React 19 |
+| Сборщик | Vite 8 |
+| Маршрутизация | React Router DOM 6 |
+| Формы | React Hook Form |
+| HTTP-клиент | Axios |
+| UI-компоненты | Headless UI React |
+| Уведомления | Sonner |
+| Стилизация | TailwindCSS 3.4 |
+
+### Инфраструктура
+
+| Сервис | Назначение |
+|--------|-----------|
+| PostgreSQL | Основная БД |
+| SeaweedFS | S3-совместимое объектное хранилище |
+| OpenSearch | Хранилище трейсов Jaeger |
+| Jaeger | Распределённая трассировка |
+
+## Архитектура проекта
+
+Проект разделён на два крупных модуля: бэкенд на Python (Polylith-монорепозиторий) и фронтенд — React SPA.
+
+### Бэкенд
+
+Бэкенд организован по архитектурному шаблону Polylith:
+
+- **`bases/`** — точки входа в приложение (deployable entrypoints):
+  - `teampass/entrypoint` — FastAPI REST API (порт 9111). Регистрирует маршруты, DI-контейнер, middleware трассировки и CORS.
+  - `teampass/admin_panel` — Starlette + SQLAdmin (порт 9222). Веб-интерфейс администратора.
+  - `teampass/migrator` — утилита запуска миграций Alembic.
+- **`components/`** — переиспользуемые библиотеки предметной области:
+  - `database` — движок SQLAlchemy, базовая модель (`BaseModel`), DAO (Data Access Object) с поддержкой типизации, фабрики DAO.
+  - `user` — регистрация, аутентификация, профили студентов.
+  - `team` — создание/управление командами, приглашения, передача капитанства.
+  - `market` — биржа знаний: листинги, отклики, сделки, отчёты.
+  - `transaction` — игровые циклы, снэпшоты рейтинга, транзакции баллов.
+  - `report` — отчёты с содержимым в JSONB.
+  - `media_storage` — S3-хранилище, модель Media.
+  - `admin` — CRUD-логика для админ-панели.
+  - `live_option` — конфигурация, хранящаяся в БД.
+  - `domain_core` — базовые классы исключений и протокол Method (CQRS).
+  - `logging` — настройка Structlog и OpenTelemetry.
+
+Каждая бизнес-операция реализована в виде **Method** (CQRS-команда) — датакласс + вызываемый класс, инжектируемый через Dishka. Доменные исключения маппятся на HTTP-статусы в слое entrypoint.
+
+### Фронтенд (веб-клиент)
+
+React SPA в директории `client/`. Сборка Vite, типизация TypeScript, маршрутизация React Router DOM.
+
+```
+client/src/
+├── api/              — HTTP-клиент и API-слой
+│   ├── client.ts     — Axios-инстанс с перехватчиками (refresh token, ошибки)
+│   ├── auth.ts       — регистрация, вход, выход
+│   ├── users.ts      — получение текущего пользователя
+│   ├── profile.ts    — CRUD профиля студента
+│   ├── teams.ts      — команды, приглашения
+│   └── types.ts      — TypeScript-интерфейсы
+├── components/       — переиспользуемые компоненты
+│   ├── ProtectedRoute.tsx  — гвард аутентификации
+│   └── PublicRoute.tsx     — перенаправление аутентифицированных
+├── layouts/          — шаблоны страниц
+│   └── MainLayout.tsx — боковая панель + Outlet (Dashboard, Team, Knowledge, Challenges, Leaderboard, Profile)
+├── pages/            — страницы приложения
+│   ├── Login.tsx / Register.tsx  — аутентификация
+│   ├── Dashboard.tsx / Knowledge.tsx / Challenges.tsx / Leaderboard.tsx — заглушки
+│   ├── Profile.tsx     — редактирование профиля
+│   └── TeamPage/       — управление командой (создание, просмотр, капитанская панель)
+├── App.tsx           — определение маршрутов
+└── main.tsx          — точка входа (BrowserRouter + Toaster)
+```
+
+Аутентификация: access token хранится в памяти JS, refresh token — в httpOnly cookie. При 401 ответе Axios-перехватчик автоматически обновляет токен и повторяет запрос.
+
+### API
+
+REST API размещено на `/api/v1`:
+
+| Префикс | Назначение |
+|---------|-----------|
+| `/api/v1/auth` | Регистрация, вход, refresh, выход |
+| `/api/v1/users` | Профили, поиск, смена email/пароля |
+| `/api/v1/teams` | Команды, приглашения, участники |
+| `/api/v1/market` | Биржа знаний: листинги, отклики, сделки, отчёты |
+
+### База данных
+
+PostgreSQL, все таблицы с UUID (gen_random_uuid()):
+
+- **student** — студенты (ФИО, ID)
+- **user** — учётные записи (email, пароль, привязка к студенту и команде, флаг капитана)
+- **student_profile** — расширенный профиль (контакты, сильные/слабые стороны)
+- **team** — команды
+- **team_invitation** — приглашения в команду
+- **game_cycle** — игровые циклы (даты начала/конца)
+- **cycle_snapshot** — снэпшоты рейтинга (командные/индивидуальные)
+- **point_transaction** — транзакции баллов
+- **market_listing** — объявления биржи знаний
+- **market_response** — отклики на объявления
+- **market_deal** — сделки
+- **report** — отчёты (JSONB)
+- **media** — медиафайлы (S3)
+- **live_option** — динамическая конфигурация
+- **admin** — администраторы
+
+## Структура директорий
+
+```
+bases/teampass/              — точки входа приложения
+├── entrypoint/              — FastAPI REST API
+├── admin_panel/             — панель администратора
+└── migrator/                — миграции БД
+
+components/teampass/         — библиотеки предметной области
+├── admin/                   — CRUD админ-панели
+├── database/                — ORM, DAO, миграции
+├── domain_core/             — базовые исключения, протокол Method
+├── live_option/             — конфигурация в БД
+├── logging/                 — логирование и трассировка
+├── market/                  — биржа знаний
+├── media_storage/           — S3-хранилище
+├── report/                  — отчёты
+├── team/                    — команды и приглашения
+├── transaction/             — игровые циклы и баллы
+└── user/                    — пользователи и профили
+
+client/                      — веб-клиент (React + Vite)
+├── src/
+│   ├── api/                 — HTTP-клиент и API-вызовы
+│   ├── components/          — общие React-компоненты
+│   ├── layouts/             — шаблоны страниц
+│   ├── pages/               — страницы приложения
+│   ├── App.tsx              — маршрутизация
+│   └── main.tsx             — точка входа
+
+projects/                    — Docker-проекты (сборка из bases)
+├── entrypoint/
+├── admin_panel/
+└── migrator/
+
+test/                        — тесты pytest
+├── components/teampass/     — тесты компонентов
+└── bases/teampass/          — интеграционные тесты
+```
+
+## Запуск
+
+```bash
+# Инфраструктура (БД, S3, Jaeger)
+docker compose -f docker-compose.dev.yaml up -d
+
+# Миграции БД
+poetry run alembic
+
+# API-сервер
+poetry run entrypoint
+
+# Админ-панель
+poetry run admin_panel
+
+# Фронтенд
+cd client && npm run dev
+```
