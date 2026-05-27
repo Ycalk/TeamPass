@@ -10,6 +10,9 @@ import { Challenges } from "./pages/Challenges";
 import { Leaderboard } from "./pages/Leaderboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
+import { MarketAll } from './pages/Market/MarketAll';
+import { MarketMyListings } from './pages/Market/MarketMyListings';
+import { MarketResponses } from './pages/Market/MarketResponses';
 
 export default function App() {
     return (
@@ -26,7 +29,11 @@ export default function App() {
                     <Route path="/app" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/team" element={<Team />} />
-                    <Route path="/knowledge" element={<Knowledge />} />
+                    <Route path="/knowledge" element={<Knowledge />}>
+                        <Route index element={<MarketAll />}/>
+                        <Route path="my" element={<MarketMyListings />} />
+                        <Route path="responses" element={<MarketResponses />} />
+                    </Route>
                     <Route path="/challenges" element={<Challenges />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/profile" element={<Profile />} />

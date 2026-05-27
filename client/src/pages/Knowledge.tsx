@@ -1,11 +1,58 @@
+import {
+  Link,
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
+
 export function Knowledge() {
+  const location = useLocation();
+
+  const tabs = [
+    {
+      label: 'Все запросы',
+      path: '/knowledge',
+    },
+    {
+      label: 'Мои запросы',
+      path: '/knowledge/my',
+    },
+    {
+      label: 'Отклики',
+      path: '/knowledge/responses',
+    },
+  ];
+
   return (
-    <div className="bg-surface-container-low p-8 rounded-3xl min-h-[400px] flex items-center justify-center border border-outline-variant/10">
-      <div className="text-center">
-        <span className="material-symbols-outlined text-6xl text-indigo-200 mb-4">swap_horizontal_circle</span>
-        <h1 className="text-2xl font-bold text-indigo-900 font-headline">Биржа знаний</h1>
-        <p className="text-on-surface-variant mt-2">Раздел в разработке</p>
+    <div className="space-y-8">
+      <div className="bg-white rounded-3xl p-8">
+        <h1 className="text-4xl font-bold text-indigo-900">
+          Биржа знаний
+        </h1>
+
+        <div className="flex gap-4 mt-6">
+          {tabs.map((tab) => {
+            const active =
+              location.pathname ===
+              tab.path;
+
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className={`px-5 py-3 rounded-2xl transition ${
+                  active
+                    ? 'bg-indigo-900 text-white'
+                    : 'bg-gray-100'
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
+
+      <Outlet />
     </div>
   );
 }
