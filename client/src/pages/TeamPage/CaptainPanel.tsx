@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
     changeTeamName, deleteTeamInvitation, getTeamInvitations,
     searchUsers, sendInvitation,
@@ -42,134 +43,148 @@ export const CaptainPanel = ({ team, onReload }: Props) => {
     }, [query, selectedUser]);
 
     return (
-        <aside className="bg-surface-container border border-outline-variant/20 rounded-3xl p-6 h-fit">
-            <h2 className="text-xl font-bold mb-6 flex items-center text-on-surface">
-                <span className="material-symbols-outlined mr-2 text-primary">admin_panel_settings</span>
-                Управление
-            </h2>
+        <aside className="bg-surface-container-lowest border border-outline-variant/15 rounded-[2rem] shadow-xl shadow-primary/5 p-6 h-fit relative overflow-hidden">
+            <div className="absolute top-[-30%] right-[-20%] w-[150px] h-[150px] bg-primary/5 rounded-full blur-[40px] pointer-events-none" />
 
-            <div className="mb-6">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
-                    Название команды
-                </label>
-                <div className="flex gap-2">
-                    <input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-xl px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
-                    />
+            <div className="relative z-10">
+                <h2 className="text-xl font-bold mb-6 flex items-center text-on-surface font-headline">
+                    <span className="material-symbols-outlined mr-2 text-primary">admin_panel_settings</span>
+                    Управление
+                </h2>
+
+                <div className="mb-6">
+                    <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">
+                        Название команды
+                    </label>
+                    <div className="flex gap-2">
+                        <input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full rounded-xl px-4 py-2.5 bg-surface-container-low border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                        />
+                        <button
+                            onClick={async () => {
+                                if (name === team.name) return;
+                                setIsSaving(true);
+                                try {
+                                    await changeTeamName(name);
+                                    toast.success("Название команды обновлено");
+                                    onReload();
+                                } catch {
+                                    toast.error("Ошибка изменения названия");
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            }}
+                            disabled={name === team.name || isSaving}
+                            className="bg-primary text-on-primary px-3 rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center shrink-0 shadow-md shadow-primary/20 disabled:shadow-none"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">
+                                {isSaving ? 'sync' : 'save'}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mb-8 relative">
+                    <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">
+                        Пригласить участника
+                    </label>
+                    <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+                        <input
+                            value={query}
+                            onChange={(e) => {
+                                setQuery(e.target.value);
+                                setSelectedUser(null);
+                            }}
+                            placeholder="ФИО или номер..."
+                            className="w-full rounded-xl pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                        />
+                    </div>
+
+                    {users.length > 0 && !selectedUser && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant/15 rounded-xl shadow-lg shadow-primary/5 max-h-48 overflow-y-auto z-20">
+                            {users.map((user) => {
+                                const fullName = `${user.student.last_name} ${user.student.first_name} ${user.student.patronymic || ""}`.trim();
+                                return (
+                                    <button
+                                        key={user.id}
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setQuery(fullName);
+                                            setUsers([]);
+                                        }}
+                                        className="w-full text-left px-4 py-3 hover:bg-surface-container text-sm text-on-surface border-b border-outline-variant/10 last:border-0 transition-colors"
+                                    >
+                                        {fullName}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     <button
+                        disabled={!selectedUser}
                         onClick={async () => {
-                            if (name === team.name) return;
-                            setIsSaving(true);
-                            await changeTeamName(name);
-                            setIsSaving(false);
-                            onReload();
+                            try {
+                                await sendInvitation(selectedUser.id);
+                                toast.success("Приглашение отправлено");
+                                setQuery("");
+                                setSelectedUser(null);
+                                await loadInvites();
+                            } catch (e: any) {
+                                if (e.response?.status === 409) {
+                                    toast.error("Пользователь уже приглашён или состоит в команде");
+                                } else {
+                                    toast.error("Ошибка отправки приглашения");
+                                }
+                            }
                         }}
-                        disabled={name === team.name || isSaving}
-                        className="bg-primary text-on-primary px-3 rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center shrink-0"
+                        className="w-full mt-3 bg-gradient-to-r from-primary to-primary-container text-on-primary py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:from-surface-container disabled:to-surface-container disabled:text-on-surface-variant disabled:shadow-none shadow-md shadow-primary/20 hover:scale-[0.98] active:scale-95 flex items-center justify-center"
                     >
-                        <span className="material-symbols-outlined text-[20px]">
-                            {isSaving ? 'sync' : 'save'}
-                        </span>
+                        <span className="material-symbols-outlined mr-2 text-[18px]">send</span>
+                        Отправить
                     </button>
                 </div>
-            </div>
 
-            <div className="mb-8 relative">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
-                    Пригласить участника
-                </label>
-                <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-                    <input
-                        value={query}
-                        onChange={(e) => {
-                            setQuery(e.target.value);
-                            setSelectedUser(null);
-                        }}
-                        placeholder="ФИО или номер..."
-                        className="w-full rounded-xl pl-10 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
-                    />
+                <div>
+                    <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">
+                        Отправленные приглашения
+                    </h3>
+                    {invites.length === 0 ? (
+                        <div className="text-sm text-on-surface-variant/60 text-center py-4">
+                            Нет активных приглашений
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {invites.map((invite) => {
+                                const fullName = `${invite.user.student.last_name} ${invite.user.student.first_name}`;
+                                return (
+                                    <div key={invite.id} className="flex items-center justify-between bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/10">
+                                        <div className="text-sm font-medium truncate pr-2 text-on-surface">{fullName}</div>
+                                        {!invite.accepted_at && (
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        await deleteTeamInvitation(invite.id);
+                                                        toast.success("Приглашение отозвано");
+                                                        loadInvites();
+                                                    } catch (e: any) {
+                                                        toast.error("Ошибка удаления приглашения");
+                                                    }
+                                                }}
+                                                className="text-on-surface-variant hover:text-error transition-colors p-1 rounded-lg hover:bg-error/10"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">close</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-
-                {users.length > 0 && !selectedUser && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-lg max-h-48 overflow-y-auto z-20">
-                        {users.map((user) => {
-                            const fullName = `${user.student.last_name} ${user.student.first_name} ${user.student.patronymic || ""}`.trim();
-                            return (
-                                <button
-                                    key={user.id}
-                                    onClick={() => {
-                                        setSelectedUser(user);
-                                        setQuery(fullName);
-                                        setUsers([]);
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-surface-container text-sm text-on-surface border-b border-outline-variant/10 last:border-0 transition-colors"
-                                >
-                                    {fullName}
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-
-                <button
-                    disabled={!selectedUser}
-                    onClick={async () => {
-                        try {
-                            await sendInvitation(selectedUser.id);
-                            setQuery("");
-                            setSelectedUser(null);
-                            await loadInvites();
-                        } catch (e: any) {
-                            if (e.response?.status === 409) {
-                                alert("Пользователь уже приглашен или состоит в команде");
-                            } else {
-                                alert("Ошибка отправки приглашения");
-                            }
-                        }
-                    }}
-                    className="w-full mt-3 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary py-2.5 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 disabled:hover:bg-primary/10 disabled:hover:text-primary flex items-center justify-center"
-                >
-                    <span className="material-symbols-outlined mr-2 text-[18px]">send</span>
-                    Отправить
-                </button>
-            </div>
-
-            <div>
-                <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3">
-                    Отправленные приглашения
-                </h3>
-                {invites.length === 0 ? (
-                    <div className="text-sm text-on-surface-variant/70 text-center py-4">Нет активных приглашений</div>
-                ) : (
-                    <div className="space-y-2">
-                        {invites.map((invite) => {
-                            const fullName = `${invite.user.student.last_name} ${invite.user.student.first_name}`;
-                            return (
-                                <div key={invite.id} className="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/20">
-                                    <div className="text-sm font-medium truncate pr-2">{fullName}</div>
-                                    {!invite.accepted_at && (
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    await deleteTeamInvitation(invite.id);
-                                                    loadInvites();
-                                                } catch (e: any) {
-                                                    alert("Ошибка удаления приглашения");
-                                                }
-                                            }}
-                                            className="text-on-surface-variant hover:text-error transition-colors p-1 rounded-lg hover:bg-error/10"
-                                        >
-                                            <span className="material-symbols-outlined text-[18px]">close</span>
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
         </aside>
     );
