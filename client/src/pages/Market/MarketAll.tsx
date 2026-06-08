@@ -1,118 +1,118 @@
 import { useEffect, useState } from 'react';
-
-import {
-  createListing,
-  createResponse,
-  getListings,
-  getTokens,
-} from '../../api/market';
-
+import { toast } from 'sonner';
+import { createListing, createResponse, getListings, getTokens } from '../../api/market';
 import { ListingCard } from './components/ListingCard';
+import { CreateListingModal } from './components/CreateListingModal';
 
 export function MarketAll() {
-  const [listings, setListings] =
-    useState<any[]>([]);
+    const [listings, setListings] = useState<any[]>([]);
+    const [tokens, setTokens] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
 
-  const [tokens, setTokens] =
-    useState<any>(null);
+    const load = async () => {
+        setLoading(true);
+        try {
+            const [listingsRes, tokensRes] = await Promise.all([
+                getListings(),
+                getTokens(),
+            ]);
+            setListings(listingsRes.data);
+            setTokens(tokensRes.data);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const [title, setTitle] = useState('');
+    useEffect(() => { load(); }, []);
 
-  const [description, setDescription] =
-    useState('');
+    const handleCreate = async (title: string, description: string) => {
+        setCreating(true);
+        try {
+            await createListing(title, description);
+            toast.success('Запрос создан');
+            setShowCreate(false);
+            await load();
+        } catch {
+            toast.error('Ошибка создания запроса');
+        } finally {
+            setCreating(false);
+        }
+    };
 
-  const load = async () => {
-    const listingsRes =
-      await getListings();
+    const handleRespond = async (listingId: string) => {
+        try {
+            await createResponse(listingId);
+            toast.success('Отклик отправлен');
+        } catch {
+            toast.error('Ошибка отправки отклика');
+        }
+    };
 
-    const tokensRes = await getTokens();
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[40vh]">
+                <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
+            </div>
+        );
+    }
 
-    setListings(listingsRes.data);
+    return (
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+                        <span className="material-symbols-outlined text-[24px]">toll</span>
+                    </div>
+                    <div>
+                        <div className="text-2xl font-black text-on-surface font-headline">{tokens?.free_tokens ?? '—'}</div>
+                        <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Свободно</div>
+                    </div>
+                </div>
 
-    setTokens(tokensRes.data);
-  };
+                <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-on-tertiary-container">
+                        <span className="material-symbols-outlined text-[24px]">lock</span>
+                    </div>
+                    <div>
+                        <div className="text-2xl font-black text-on-surface font-headline">{tokens?.reserved_tokens ?? '—'}</div>
+                        <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Зарезервировано</div>
+                    </div>
+                </div>
 
-  useEffect(() => {
-    load();
-  }, []);
+                <button
+                    onClick={() => setShowCreate(true)}
+                    className="bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-2xl p-5 flex items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[0.98] active:scale-95 transition-all font-bold"
+                >
+                    <span className="material-symbols-outlined text-[24px]">add_circle</span>
+                    Создать запрос
+                </button>
+            </div>
 
-  return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-3xl p-6">
-        <div className="text-xl font-bold">
-          Токены команды
+            {listings.length === 0 ? (
+                <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-12 text-center">
+                    <span className="material-symbols-outlined text-5xl text-primary/30 block mb-4">search_off</span>
+                    <p className="text-on-surface-variant font-medium">Пока нет доступных запросов</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {listings.map((listing) => (
+                        <ListingCard
+                            key={listing.id}
+                            listing={listing}
+                            onRespond={() => handleRespond(listing.id)}
+                        />
+                    ))}
+                </div>
+            )}
+
+            <CreateListingModal
+                open={showCreate}
+                onClose={() => setShowCreate(false)}
+                onSubmit={handleCreate}
+                loading={creating}
+            />
         </div>
-
-        <div className="mt-3">
-          Свободно: {tokens?.free_tokens}
-        </div>
-
-        <div>
-          Зарезервировано:{' '}
-          {tokens?.reserved_tokens}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-3xl p-6">
-        <h2 className="text-2xl font-bold mb-5">
-          Создать запрос
-        </h2>
-
-        <input
-          value={title}
-          onChange={(e) =>
-            setTitle(e.target.value)
-          }
-          placeholder="Название"
-          className="w-full border rounded-2xl px-4 py-3 mb-4"
-        />
-
-        <textarea
-          value={description}
-          onChange={(e) =>
-            setDescription(
-              e.target.value
-            )
-          }
-          placeholder="Описание"
-          className="w-full border rounded-2xl px-4 py-3"
-        />
-
-        <button
-          onClick={async () => {
-            await createListing(
-              title,
-              description
-            );
-
-            setTitle('');
-            setDescription('');
-
-            load();
-          }}
-          className="mt-5 bg-indigo-900 text-white px-5 py-3 rounded-2xl"
-        >
-          Создать
-        </button>
-      </div>
-
-      <div className="space-y-5">
-        {listings.map((listing) => (
-          <ListingCard
-            key={listing.id}
-            listing={listing}
-            onRespond={async () => {
-              await createResponse(
-                listing.id
-              );
-
-              alert(
-                'Отклик отправлен'
-              );
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
+    );
 }

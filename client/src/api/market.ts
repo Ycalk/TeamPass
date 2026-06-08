@@ -60,7 +60,8 @@ export const getDealReport = (
   dealId: string
 ) =>
   apiClient.get(
-    `/market/deals/${dealId}/report`
+    `/market/deals/${dealId}/report`,
+    { skipGlobalErrorNotification: true } as any
   );
 
 export const createDealReport = (
