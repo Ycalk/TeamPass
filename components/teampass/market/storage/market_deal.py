@@ -11,10 +11,10 @@ from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 from sqlalchemy.orm.interfaces import ORMOption
 from teampass.database import BaseDAO, BaseDAOFactory, BaseModel
 
+from .market_response import MarketResponse
+
 if TYPE_CHECKING:
     from teampass.report.storage import Report
-
-    from .market_response import MarketResponse
 
 
 class MarketDealStatus(StrEnum):
@@ -47,6 +47,7 @@ class MarketDeal(BaseModel):
 
 class MarketDealLoadEnum(StrEnum):
     MARKET_RESPONSE = "market_response"
+    MARKET_LISTING = "market_listing"
     REPORT = "report"
 
 
@@ -61,6 +62,9 @@ class MarketDealDAO(BaseDAO[MarketDeal, UUID, MarketDealLoadEnum]):
     ) -> dict[MarketDealLoadEnum, ORMOption | Sequence[ORMOption]]:
         return {
             MarketDealLoadEnum.MARKET_RESPONSE: joinedload(MarketDeal.market_response),
+            MarketDealLoadEnum.MARKET_LISTING: joinedload(
+                MarketDeal.market_response
+            ).joinedload(MarketResponse.market_listing),
             MarketDealLoadEnum.REPORT: joinedload(MarketDeal.report),
         }
 
