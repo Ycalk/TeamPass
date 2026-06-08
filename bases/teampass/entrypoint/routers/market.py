@@ -496,7 +496,7 @@ async def get_deal_report(
         )
 
     deal = await deal_dao.find_by_id(
-        deal_id, includes=[MarketDealLoadEnum.MARKET_RESPONSE]
+        deal_id, includes=[MarketDealLoadEnum.MARKET_LISTING]
     )
     if deal is None:
         logger.error("deal_not_found")
